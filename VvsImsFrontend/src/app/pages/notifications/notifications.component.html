@@ -1,0 +1,305 @@
+<div class="notifications-page">
+  <!-- Header -->
+  <div class="page-header bg-light border-bottom py-4">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <div class="col">
+          <div class="d-flex align-items-center gap-3">
+            <div>
+              <h1 class="h3 mb-1">
+                <i class="fa fa-bell text-warning me-2"></i>
+                Notifications
+              </h1>
+              <p class="text-muted mb-0">Manage and view all your notifications</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="d-flex gap-2">
+            <button 
+              class="btn text-white"
+              (click)="refreshNotifications()"
+              [disabled]="loading">
+              <i [class]="loading ? 'fa fa-spinner fa-spin' : 'fa fa-refresh'"></i>
+              Refresh
+            </button>
+            <button 
+              class="btn text-white"
+              (click)="markAllAsRead()"
+              [disabled]="filters[1].count === 0">
+              <i class="fa fa-check-double me-2"></i>
+              Mark All Read
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container-fluid py-4">
+    <div class="row g-4">
+      <!-- Sidebar - Filters -->
+      <div class="col-lg-3" *ngIf="!selectedNotification">
+        <div class="card">
+          <div class="card-header bg-white">
+            <h6 class="mb-0">
+              <i class="fa fa-filter me-2"></i>
+              Filters
+            </h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <a 
+                *ngFor="let filter of filters"
+                href="javascript:void(0)"
+                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                [class.active]="activeFilter === filter.key"
+                (click)="setFilter(filter.key)">
+                <span>
+                  <i class="me-2" [class]="getFilterIcon(filter.key)"></i>
+                  {{ filter.label }}
+                </span>
+                <span class="badge" [class]="getFilterBadgeClass(filter.key)">
+                  {{ filter.count }}
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="card mt-3">
+          <div class="card-body">
+            <label class="form-label small text-muted">Search Notifications</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="fa fa-search"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Search by title, message..."
+                [value]="searchTerm"
+                (input)="onSearchChange($any($event.target).value)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card mt-3">
+          <div class="card-body">
+            <h6 class="card-title">Summary</h6>
+            <div class="d-flex justify-content-between text-center">
+              <div>
+                <div class="h5 text-primary mb-0">{{ filters[1].count }}</div>
+                <small class="text-muted">Unread</small>
+              </div>
+              <div>
+                <div class="h5 text-success mb-0">{{ filters[2].count }}</div>
+                <small class="text-muted">Orders</small>
+              </div>
+              <!-- <div>
+                <div class="h5 text-warning mb-0">{{ filters[3].count }}</div>
+                <small class="text-muted">Inventory</small>
+              </div> -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications List / Details -->
+      <div class="col-lg-9">
+        <div class="card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0" *ngIf="!selectedNotification">
+              {{ filteredNotifications.length }} notifications found
+            </h6>
+            <h6 class="mb-0" *ngIf="selectedNotification">
+              Notification Details
+            </h6>
+            <button 
+              *ngIf="selectedNotification"
+              class="btn btn-sm btn-outline-secondary"
+              (click)="closeNotificationDetails()">
+              <i class="fa fa-times me-1"></i> Close
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="loading" class="card-body text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <!-- <span class="visually-hidden">Loading...</span> -->
+            </div>
+            <p class="mt-2 text-muted">Loading notifications...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div 
+            *ngIf="!loading && filteredNotifications.length === 0 && !selectedNotification" 
+            class="card-body text-center py-5">
+            <i class="fa fa-bell-slash fa-3x text-muted mb-3 opacity-50"></i>
+            <h5 class="text-muted">No notifications found</h5>
+            <p class="text-muted">We'll notify you when something arrives</p>
+            <button class="btn btn-primary" (click)="refreshNotifications()">
+              <i class="fa fa-sync-alt me-2"></i>Refresh
+            </button>
+          </div>
+
+          <!-- Notifications List -->
+          <div 
+            *ngIf="!loading && filteredNotifications.length > 0 && !selectedNotification"
+            class="notification-list">
+            <div 
+              *ngFor="let notification of filteredNotifications"
+              class="notification-item border-bottom"
+              [class.unread]="!notification.isRead"
+              (click)="openNotificationDetails(notification)">
+              
+              <div class="d-flex gap-3 p-3">
+                <!-- Icon -->
+                <div class="flex-shrink-0">
+                  <div class="notification-icon">
+                    <i [class]="getNotificationIcon(notification.type)"></i>
+                  </div>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                    <h6 class="notification-title mb-0" [class.fw-bold]="!notification.isRead">
+                      {{ notification.title }}
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge bg-warning" [class]="getNotificationBadgeClass(notification.type)">
+                        {{ notification.type }}
+                      </span>
+                      <small class="text-muted">{{ notification.timeAgo }}</small>
+                    </div>
+                  </div>
+                  
+                  <p class="notification-message text-muted mb-2">
+                    {{ notification.message }}
+                  </p>
+                  
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fa fa-calendar me-1"></i>
+                      {{ notification.createdAt | date:'medium' }}
+                    </small>
+                    <span *ngIf="!notification.isRead" class="unread-dot bg-primary"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notification Details View -->
+          <div *ngIf="selectedNotification" class="notification-details">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-12">
+                  <!-- Header -->
+                  <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="notification-detail-icon">
+                      <i [class]="getNotificationIcon(selectedNotification.type) + ' fa-2x'"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <h4 class="mb-1">{{ selectedNotification.title }}</h4>
+                      <div class="d-flex align-items-center gap-3 flex-wrap ml-2">
+                        <span class="badge bg-warning fs-6" [class]="getNotificationBadgeClass(selectedNotification.type)">
+                          {{ selectedNotification.type }}
+                        </span>
+                        <small class="text-muted">
+                          <i class="fa fa-clock me-1"></i>
+                          {{ selectedNotification.createdAt | date:'fullDate' }} at 
+                          {{ selectedNotification.createdAt | date:'shortTime' }}
+                        </small>
+                        <small class="text-muted">
+                          <i class="fa fa-history me-1 ml-2"></i>
+                          {{ selectedNotification.timeAgo }} ago
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Message Content -->
+                  <div class="message-section mb-4">
+                    <h6 class="section-title text-muted border-bottom pb-2">Message</h6>
+                    <div class="message-content p-3 bg-light rounded mt-2">
+                      <p class="mb-0">{{ selectedNotification.message }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Related Entity -->
+                  <div class="related-section mb-4" *ngIf="selectedNotification.relatedEntity">
+                    <h6 class="section-title text-muted border-bottom pb-2">Related Item</h6>
+                    <div class="mt-2">
+                      <code class="bg-dark text-white px-3 py-2 rounded d-inline-block">
+                        {{ selectedNotification.relatedEntity }}
+                      </code>
+                    </div>
+                  </div>
+
+                  <!-- Notification Metadata -->
+                  <div class="metadata-section">
+                    <h6 class="section-title text-muted border-bottom pb-2">Notification Details</h6>
+                    <div class="row mt-2">
+                      <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                          <tr>
+                            <td class="text-muted" style="width: 120px;">Status:</td>
+                            <td>
+                              <span 
+                                class="badge" 
+                                [class]="selectedNotification.isRead ? 'bg-success' : 'bg-warning text-dark'">
+                                {{ selectedNotification.isRead ? 'Read' : 'Unread' }}
+                              </span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="text-muted">Notification ID:</td>
+                            <td>#{{ selectedNotification.id }}</td>
+                          </tr>
+                        </table>
+                      </div>
+                      <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                          <tr>
+                            <td class="text-muted">Type:</td>
+                            <td>{{ selectedNotification.type }}</td>
+                          </tr>
+                          <tr>
+                            <td class="text-muted">Created:</td>
+                            <td>{{ selectedNotification.createdAt | date:'medium' }}</td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card-footer bg-white border-top">
+              <div class="d-flex gap-2 justify-content-end">
+                <button 
+                  class="btn btn-outline-secondary"
+                  (click)="closeNotificationDetails()">
+                  <i class="fa fa-arrow-left me-1"></i> Back to List
+                </button>
+                <button 
+                  *ngIf="!selectedNotification.isRead"
+                  class="btn btn-primary"
+                  (click)="markAsRead(selectedNotification)">
+                  <i class="fa fa-check me-1"></i>Mark as Read
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

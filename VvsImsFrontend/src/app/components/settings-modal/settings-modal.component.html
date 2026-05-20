@@ -1,0 +1,100 @@
+<div class="settings-backdrop" [class.visible]="isVisible" *ngIf="isVisible" (click)="closeModal()"></div>
+
+<div class="settings-modal" [class.visible]="isVisible">
+    <!-- Header -->
+    <div class="settings-header">
+        <div class="header-content">
+            <i class="fa fa-cog header-icon"></i>
+            <h5 class="header-title">{{ componentName }} Settings</h5>
+        </div>
+        <button class="close-btn" (click)="closeModal()" title="Close">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Body -->
+    <div class="settings-body">
+        <!-- No Custom Settings -->
+        <div class="no-settings" *ngIf="!settingsSummary.hasCustomSettings">
+            <i class="fa fa-info-circle info-icon"></i>
+            <p class="info-text">No custom settings saved yet.</p>
+            <p class="info-subtext">
+                Your table columns, widths, and filters will be automatically saved as
+                you customize them.
+            </p>
+        </div>
+
+        <!-- Settings Sections -->
+        <div class="settings-sections" *ngIf="settingsSummary.hasCustomSettings">
+            <!-- Column Visibility -->
+            <div class="setting-card" *ngIf="settingsSummary.hasColumnSettings">
+                <div class="card-header">
+                    <div class="card-icon-wrapper icon-primary">
+                        <i class="fa fa-columns"></i>
+                    </div>
+                    <div class="card-info">
+                        <h6 class="card-title">Column Visibility</h6>
+                        <p class="card-subtitle">
+                            {{ settingsSummary.visibleColumns }} of {{ settingsSummary.totalColumns }} columns visible
+                            <span class="badge badge-info" *ngIf="settingsSummary.hiddenColumnsCount > 0">
+                                {{ settingsSummary.hiddenColumnsCount }} hidden
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <button class="action-btn btn-outline-primary" (click)="onResetColumns()">
+                    <i class="fa fa-refresh"></i> Reset Columns
+                </button>
+            </div>
+
+            <!-- Column Widths -->
+            <div class="setting-card" *ngIf="settingsSummary.modifiedColumnsCount > 0">
+                <div class="card-header">
+                    <div class="card-icon-wrapper icon-success">
+                        <i class="fa fa-arrows-h"></i>
+                    </div>
+                    <div class="card-info">
+                        <h6 class="card-title">Column Widths</h6>
+                        <p class="card-subtitle">
+                            Custom widths and order saved
+                            <span class="badge badge-success">Modified</span>
+                        </p>
+                    </div>
+                </div>
+                <button class="action-btn btn-outline-success" (click)="onResetWidths()">
+                    <i class="fa fa-refresh"></i> Reset Widths
+                </button>
+            </div>
+
+            <!-- Search Filter -->
+            <div class="setting-card" *ngIf="settingsSummary.hasSearchFilter">
+                <div class="card-header">
+                    <div class="card-icon-wrapper icon-warning">
+                        <i class="fa fa-search"></i>
+                    </div>
+                    <div class="card-info">
+                        <h6 class="card-title">Active Search Filter</h6>
+                        <p class="card-subtitle">
+                            <span class="search-text">"{{ settingsSummary.searchText }}"</span>
+                        </p>
+                    </div>
+                </div>
+                <button class="action-btn btn-outline-warning" (click)="onResetSearch()">
+                    <i class="fa fa-times"></i> Clear Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="settings-footer" *ngIf="settingsSummary.hasCustomSettings">
+        <button class="btn-reset-all" (click)="onResetAll()">
+            <i class="fa fa-undo"></i>
+            Reset All Settings
+        </button>
+        <p class="footer-note">
+            <i class="fa fa-info-circle"></i>
+            All settings are saved automatically
+        </p>
+    </div>
+</div>

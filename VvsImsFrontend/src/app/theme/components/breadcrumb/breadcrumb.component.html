@@ -1,0 +1,17 @@
+@if (router.url != '/') {
+  <ol class="breadcrumb">
+    @if (router.url != '/') {
+      <li class="breadcrumb-item">
+        <a routerLink="/view" (click)="closeSubMenus()"><i class="fa fa-home mr-2"></i>Home</a>
+      </li>
+    }
+    @for (breadcrumb of breadcrumbs; track breadcrumb; let i = $index) {
+      <li class="breadcrumb-item">
+        <a [hidden]="i == (breadcrumbs.length - 1)" [routerLink]="[breadcrumb.url]">{{breadcrumb.name}}</a>
+        <span [hidden]="i != (breadcrumbs.length - 1)">@if (router.url == '/') {
+          <i class="fa fa-home mr-2"></i>
+          }<b>{{breadcrumb.name}}</b></span>
+        </li>
+      }
+    </ol>
+  }

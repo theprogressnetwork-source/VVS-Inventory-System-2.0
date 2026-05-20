@@ -1,0 +1,456 @@
+:root {
+    --primary: #1A237E !important;
+    --primary-dark: #0d1a5d !important;
+    --secondary: #FFC107 !important;
+    --white: #fff !important;
+    --text-grey: #6c757d;
+    --bg-light: #f4f7f6;
+    /* New Colors from Image */
+    --tech-blue: #304FFE;
+    /* Vibrant Blue */
+    --tech-cyan: #00E5FF;
+    /* Glowing Cyan */
+    --glass-border: rgba(255, 255, 255, 0.4);
+}
+
+body {
+    background-color: var(--bg-light);
+    font-family: 'Poppins', sans-serif;
+}
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    /* Darker, richer background to make the 'glow' pop */
+    background: radial-gradient(circle at center, #2c3e50, #000000);
+    background: linear-gradient(135deg, #1c1e21 0%, #29323c 100%);
+    /* Or keep it light if preferred, but 'tech' usually looks good dark. 
+       Let's stick to a clean tech grey/blue vibe as per the image's likely environment */
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+}
+
+.login-wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    background: #fff;
+    border-radius: 20px;
+    /* Premium Glass/Tech Border */
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+        0 20px 40px rgba(26, 35, 126, 0.15),
+        0 0 0 1px rgba(26, 35, 126, 0.05);
+    overflow: hidden;
+    min-height: 650px;
+    animation: fadeIn 0.8s ease-out;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+
+/* Left Side - Info Section */
+.info-section {
+    flex: 1.2;
+    /* Deep blue gradient matching the hub core */
+    background: linear-gradient(135deg, #1A237E 0%, #151965 100%);
+    color: #fff;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* Center content */
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+/* Background grid effect for tech feel */
+.info-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    opacity: 0.5;
+}
+
+.info-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    animation: slideRight 0.8s ease-out 0.2s both;
+}
+
+.brand-logo {
+    width: 80px;
+    height: 80px;
+    background: #FFC107;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    animation: bounceIn 1s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+}
+
+.brand-logo i {
+    font-size: 2.5rem;
+    color: #1A237E;
+}
+
+/* Illustration Styles */
+.illustration-container {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto 2rem;
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+    display: flex;
+    justify-content: center;
+}
+
+.main-illustration {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    /* Enhanced glow shadow matching image cyan/blue accents */
+    filter: drop-shadow(0 0 20px rgba(48, 79, 254, 0.4));
+    border-radius: 10px;
+    /* Slight rounding if the image is rectangular */
+}
+
+/* Typography Enhancements */
+.info-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(to right, #fff, #E3F2FD);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.info-section p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    opacity: 0.95;
+    margin-bottom: 0;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 300;
+    color: #E8EAF6;
+}
+
+.info-section p strong {
+    color: #FFC107;
+    /* Amber stays for contrast */
+    font-weight: 600;
+}
+
+/* Decorative Circles - Now acting as 'Glows' */
+.circle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.circle-1 {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    right: -100px;
+    background: rgba(0, 229, 255, 0.15);
+    /* Cyan glow */
+}
+
+.circle-2 {
+    width: 400px;
+    height: 400px;
+    bottom: -150px;
+    left: -150px;
+    background: rgba(48, 79, 254, 0.15);
+    /* Deep Blue glow */
+}
+
+/* Right Side - Form Section */
+.form-section {
+    flex: 0.8;
+    padding: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 380px;
+    animation: slideLeft 0.8s ease-out 0.2s both;
+}
+
+.form-header {
+    margin-bottom: 2.5rem;
+    text-align: left;
+}
+
+.form-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1A237E;
+    margin-bottom: 0.5rem;
+}
+
+.form-header p {
+    color: #6c757d;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #1A237E;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.input-group {
+    position: relative;
+    /* Add subtle transition for the whole group */
+    transition: transform 0.3s;
+}
+
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    transition: color 0.3s;
+    z-index: 5;
+}
+
+.form-control-login {
+    width: 100%;
+    padding: 14px 15px 14px 45px;
+    /* Slightly taller */
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: #f8f9fa;
+}
+
+/* Focus State - Tech Glow */
+.form-control-login:focus {
+    border-color: var(--tech-blue);
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(48, 79, 254, 0.15);
+    outline: none;
+}
+
+.form-control-login:focus+.input-icon {
+    color: var(--tech-blue);
+}
+
+.options-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.custom-control-input {
+    margin-right: 0.5rem;
+    accent-color: var(--tech-blue);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.custom-control-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.forgot-password {
+    color: var(--tech-blue);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-password:hover {
+    color: #FFC107;
+    text-decoration: underline;
+}
+
+/* Button - Gradient Sync */
+.btn-primary-custom {
+    width: 100%;
+    padding: 14px;
+    /* Gradient matching the 'streams' in the image */
+    background: linear-gradient(135deg, #1A237E 0%, #304FFE 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 35, 126, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary-custom:hover:not([disabled]) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(48, 79, 254, 0.4);
+    /* Glowing shadow */
+    background: linear-gradient(135deg, #304FFE 0%, #1A237E 100%);
+}
+
+.btn-primary-custom:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideRight {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideLeft {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+    70% {
+        transform: scale(0.9);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+        filter: drop-shadow(0 5px 15px rgba(48, 79, 254, 0.3));
+    }
+
+    50% {
+        transform: translateY(-10px);
+        filter: drop-shadow(0 15px 25px rgba(48, 79, 254, 0.5));
+    }
+
+    100% {
+        transform: translateY(0px);
+        filter: drop-shadow(0 5px 15px rgba(48, 79, 254, 0.3));
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .login-wrapper {
+        flex-direction: column;
+        max-width: 600px;
+        min-height: auto;
+    }
+
+    .info-section {
+        padding: 3rem;
+        text-align: center;
+        min-height: auto;
+    }
+
+    .info-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .illustration-container {
+        max-width: 250px;
+    }
+
+    .form-section {
+        padding: 3rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .login-container {
+        padding: 1rem;
+    }
+
+    .info-section h1 {
+        font-size: 1.8rem;
+        /* Simplify text shadow for mobile */
+        text-shadow: none;
+    }
+
+    .form-section {
+        padding: 2rem;
+    }
+}

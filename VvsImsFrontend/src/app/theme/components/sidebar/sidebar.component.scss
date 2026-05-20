@@ -1,0 +1,26 @@
+@import "../../../theme/styles/variables";
+
+.sidebar-outer {
+    height: 100%;
+    width: $sidebar-width;
+
+    .logo {
+        // height: $top-navbar-height;
+        // padding: 0 14px;
+        // width: $sidebar-width;
+
+        height: 80px;
+        padding: 0 14px;
+        width: 250px;
+        line-height: 1;
+        font-family: inherit;
+        text-align: left;
+        font-weight: 700;
+        color: white;
+        /* text fill color */
+        -webkit-text-stroke: 1px black;
+        /* outline color + thickness */
+        text-stroke: 1px black;
+        /* fallback */
+    }
+}

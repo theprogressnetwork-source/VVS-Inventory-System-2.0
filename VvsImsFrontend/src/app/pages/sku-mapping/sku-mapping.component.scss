@@ -1,0 +1,73 @@
+.multi-select {
+  position: relative;
+  width: 220px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.select-box {
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 0px;
+}
+
+.select-box:hover {
+  border-color: #007bff;
+}
+
+.options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  padding: 6px 0;
+}
+
+.option-item {
+  padding: 4px 12px;
+}
+
+.option-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.option-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.option-label span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+
+.card {
+  border-radius: 0px;
+}
+
+.dropdown-item.active {
+  background-color: #007bff;
+  color: white;
+}
+.ag-theme-alpine .ag-cell {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+}

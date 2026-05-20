@@ -1,0 +1,29 @@
+<div class="imei-wrapper position-relative w-100 h-100">
+
+  <input #imeiInput
+         [(ngModel)]="newImei"
+         class="form-control"
+         style="height: 32px; padding: 4px 6px; position: relative; top: 2px;"
+         (input)="onInput()"
+         (focus)="openSuggestions()"
+         (keydown.enter)="onEnter()"
+  />
+
+  <div *ngIf="showSuggestionList"
+       class="suggestion-box"
+       [ngClass]="{ 'above': dropdownAbove }">
+
+    <button *ngFor="let imei of filteredImeis"
+            type="button"
+            class="list-group-item list-group-item-action py-1"
+            (click)="selectImei(imei)">
+        {{ imei }}
+    </button>
+
+    <div *ngIf="filteredImeis.length === 0"
+         class="p-1 small text-muted text-center">
+        No matching IMEI
+    </div>
+
+  </div>
+</div>

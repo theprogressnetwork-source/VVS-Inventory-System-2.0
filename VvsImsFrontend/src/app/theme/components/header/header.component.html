@@ -1,0 +1,64 @@
+<nav class="navbar box-shadow app-header" [class.fixed-top]="settings.theme.navbarIsFixed"
+  [class.logo-visible]="showInfoContent">
+  <div class="d-flex flex-column w-100">
+    <div class="d-flex justify-content-start align-items-center top-navbar">
+
+      <a class="logo" routerLink="/" (click)="closeSubMenus()">
+        <!-- <span class="start">IM</span><span class="ng">S</span> -->
+      </a>
+
+      <span class="navbar-text menu-icon transition ml-3 mr-3" [ngClass]="{'open': settings.theme.showMenu}"
+        (click)="settings.theme.showMenu = !settings.theme.showMenu">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </span>
+
+      <!-- <div class="d-flex justify-content-center align-items-center p-3 shadow-sm">
+        <span class="mx-2">
+          <a [routerLink]="['/view/inventory']"
+            class="text-decoration-none fw-semibold px-2 py-1 rounded hover-link">Inventory</a>
+        </span>
+        <span class="mx-2">|</span>
+        <span class="mx-2">
+          <a [routerLink]="['/view/input', 1]"
+            class="text-decoration-none fw-semibold px-2 py-1 rounded hover-link">Input</a>
+        </span>
+        <span class="mx-2">|</span>
+        <span class="mx-2">
+          <a [routerLink]="['/view/outgoing', 1]"
+            class="text-decoration-none fw-semibold px-2 py-1 rounded hover-link">Outgoing</a>
+        </span>
+      </div> -->
+
+
+      <div class="top-rigth-icons ml-auto d-flex align-items-center">
+        <!-- Notifications -->
+        <span class="hidden-xs-down pl-2 pr-2">
+          <app-notification-bell></app-notification-bell>
+        </span>
+
+        <span class="hidden-xs-down">
+          <app-user-menu></app-user-menu>
+        </span>
+        <span class="pl-2 pr-2">
+          <a href="#" (click)="onLogout($event)">
+            <i class="fa fa-sign-out" aria-hidden="true"></i>
+          </a>
+        </span>
+      </div>
+
+    </div>
+
+    @if (settings.theme.menu == 'horizontal') {
+    <div class="horizontal-menu-outer">
+      @if (showHorizontalMenu) {
+      <app-horizontal-menu [menuItems]="menuItems"></app-horizontal-menu>
+      } @else {
+      <app-vertical-menu [menuItems]="menuItems"></app-vertical-menu>
+      }
+    </div>
+    }
+  </div>
+</nav>

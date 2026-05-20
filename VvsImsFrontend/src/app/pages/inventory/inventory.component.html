@@ -1,0 +1,281 @@
+<div *ngIf="isLoading; else content">
+  <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+  <div class="inventory-toolbar">
+    <!-- LEFT: Search -->
+    <div class="toolbar-left">
+      <input type="text" class="form-control" placeholder="Search inventory" [(ngModel)]="searchText"
+        (ngModelChange)="onQuickFilterChanged($event)" />
+    </div>
+
+    <!-- CENTER: Metrics -->
+    <div class="toolbar-metrics">
+      <div class="metric-card">
+        <div class="metric-value">${{ totalSum | number : "1.0-0" }}</div>
+        <div class="metric-label">Total Amount</div>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-card">
+        <div class="metric-value">${{ totalSumWithHst | number : "1.0-0" }}</div>
+        <div class="metric-label">Total + HST</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Actions -->
+    <div class="toolbar-actions">
+      <div class="btn-group" ngbDropdown>
+        <button class="btn btn-outline-info dropdown-toggle d-flex align-items-center px-3" ngbDropdownToggle>
+          <i class="fa fa-columns me-2"></i>
+          <span class="ml-2">Columns</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right p-2" ngbDropdownMenu
+          style="min-width: 200px; max-height: 300px; overflow-y: auto;">
+          <div *ngFor="let col of allColumns" class="custom-control custom-checkbox mb-1">
+            <input type="checkbox" class="custom-control-input" [id]="'col-' + col.field" [checked]="col.visible"
+              (change)="onColumnToggle(col.field, $event)">
+            <label class="custom-control-label" [for]="'col-' + col.field">{{ col.headerName }}</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline-secondary d-flex align-items-center" (click)="openSettingsModal()"
+        title="Column and Filter Settings">
+        <i class="fa fa-cog me-2 pr-2"></i>
+        Settings
+      </button>
+      <button class="btn bttn d-flex align-items-center" (click)="openAddModal()" title="Import File">
+        <i class="fa fa-plus me-2 pr-2"></i>
+        Import File
+      </button>
+      <button class="btn btn-outline-success d-flex align-items-center" (click)="exportExcel()" title="Export Excel">
+        <i class="fa fa-file-excel-o me-2 pr-2"></i>
+        Export Excel
+      </button>
+      <button class="btn btn-outline-primary d-flex align-items-center" (click)="syncAllStock()"
+        [disabled]="isCooldownActive || isStockSync" title="Sync All Stock">
+        <i class="fa" [ngClass]="{ 'fa-refresh fa-spin': isStockSync, 'fa-refresh': !isStockSync }"></i>
+        <span class="ms-2 ml-2">Sync All</span>
+        <span class="ms-2 text-muted" *ngIf="isCooldownActive && !isStockSync">
+          ({{ cooldownMinutes }}m)
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 800px" [rowData]="listInventory"
+    [theme]="'legacy'" [gridOptions]="gridOptions" [columnDefs]="colDefs" [defaultColDef]="defaultColDef"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+
+  <!-- <div class="table-container bg-white p-3 shadow-lg">
+        <div class="table-responsive">
+            <table datatable [dtOptions]="dtOptions" [dtTrigger]="dtTrigger"
+                class="table table-striped table-bordered text-nowrap">
+                <thead class="bg-primary text-white">
+                    <tr>
+                        <th>SKU Code</th>
+                        <th>Model</th>
+                        <th>Storage</th>
+                        <th>Color</th>
+                        <th>Grade</th>
+                        <th class="text-center">Cost</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-center">Wining</th>
+                        <th>Value</th>
+                        <th>Value + HST</th>
+                        <th>Break-even</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of listInventory; let i = index">
+                        <td>{{ item.sku }}</td>
+                        <td>{{ item.model }}</td>
+                        <td>{{ item.storage }}</td>
+                        <td>{{ item.color }}</td>
+                        <td>
+                            {{ item.grade == 0 ? 'Good' : item.grade == 2 ? 'Excellent' : item.grade == 1 ? 'OpenBox' :
+                            ''
+                            }}
+                        </td>
+                        <td class="text-right">{{ item.cost }}</td>
+                        <td class="text-right">{{ item.quantity }}</td>
+                        <td class="text-center">
+                            <span *ngIf="!item.winning"
+                                class="badge rounded-pill bg-light text-danger border border-danger px-3 py-1">
+                                <i class="fa fa-times-circle me-1"></i> Lossing
+                            </span>
+                            <span *ngIf="item.winning"
+                                class="badge rounded-pill bg-light text-success border border-success px-3 py-1">
+                                <i class="fa fa-check-circle me-1"></i> Winning
+                            </span>
+                        </td>
+                        <td class="text-right">{{ item.cost * item.quantity | number:'1.0-0' }}</td>
+                        <td class="text-right">{{ item.cost * item.quantity * 1.13 | number:'1.0-0' }}</td>
+                        <td class="text-right">{{ (item.cost) / 0.9 | number:'1.0-0' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div> -->
+</ng-template>
+
+<ng-template #modalTemplate let-modal>
+  <div class="modal-header p-3 bg-light">
+    <h5 class="mb-0">Upload File</h5>
+    <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+      style="outline: none">
+      <span aria-hidden="true" class="whitee">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label>Select Excel file</label>
+
+      <!-- Unified Drag & Drop + Click Zone -->
+      <label class="upload-zone w-100 text-center" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+        (drop)="onFileDrop($event)">
+        <input type="file" hidden (change)="onFileChange($event)" accept=".xlsx,.xls" />
+
+        <div class="p-4">
+          <ng-container *ngIf="selectedFile; else placeholder">
+            <p class="mb-1">
+              <i class="fa fa-file-excel text-success"></i>
+              {{ selectedFile.name }} ({{
+              (selectedFile.size / 1024).toFixed(1)
+              }}
+              KB)
+              <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile()">
+                <i class="fa fa-times"></i>
+              </button>
+            </p>
+          </ng-container>
+
+          <ng-template #placeholder>
+            <p class="mb-1">Drag & drop Excel file here</p>
+            <p class="text-muted small mb-0">or click to browse</p>
+          </ng-template>
+        </div>
+      </label>
+
+      <!-- Sample File Download -->
+      <small class="form-text text-muted">
+        Need a template?
+        <a href="/samples/winningsheet.xlsx" download>Download Sample File</a>
+      </small>
+    </div>
+
+    <div class="modal-footer pb-0">
+      <button type="submit" class="btn btn-primary" (click)="onBulkSubmit(modal)" [disabled]="!selectedFile || loading">
+        <span *ngIf="!loading"> <i class="fa fa-save"></i> Submit </span>
+
+        <span *ngIf="loading">
+          <i class="fa fa-spinner fa-spin"></i> Submitting...
+        </span>
+      </button>
+      <button type="button" class="btn btn-danger" aria-label="Close" (click)="modal.dismiss('Cross click')"
+        style="outline: none">
+        <i class="fa fa-times"></i> Cancel
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #failedModalRef let-modal>
+  <div class="modal-header bg-danger text-white">
+    <h5 class="mb-0">Failed Records</h5>
+    <button type="button" class="close" (click)="modal.dismiss()">
+      <span>&times;</span>
+    </button>
+  </div>
+
+  <div class="modal-body">
+    <div class="alert alert-danger">
+      Some records could not be processed.
+      <br />
+      <b>Total:</b> {{ failedSummary?.total }} | <b>Updated:</b>
+      {{ failedSummary?.updated }} | <b>Failed:</b> {{ failedSummary?.failed }}
+    </div>
+
+    <div class="table-responsive" style="max-height: 300px; overflow-y: auto">
+      <table class="table table-sm table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>SKU</th>
+            <th>Title</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Difference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let x of failedRecords">
+            <td>{{ x.bestbuySku }}</td>
+            <td>{{ x.bestbuySkuTitle }}</td>
+            <td>{{ x.bestbuyPrice | number : "1.2-2" }}</td>
+            <td>{{ x.bestbuyQuantity }}</td>
+            <td>{{ x.bestbuyDifference | number : "1.2-2" }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-success" (click)="downloadFailedExcel()">
+      <i class="fa fa-download"></i> Download Failed Excel
+    </button>
+
+    <button class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+  </div>
+</ng-template>
+
+<!-- Sync Report Modal -->
+<ng-template #syncModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Stock Sync Report</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <p><strong>Total SKUs:</strong> {{ syncReport?.totalSkus }}</p>
+    <p><strong>Success:</strong> {{ syncReport?.successCount }}</p>
+    <p><strong>Failed:</strong> {{ syncReport?.failedCount }}</p>
+    <p><strong>Skipped:</strong> {{ syncReport?.skippedCount }}</p>
+
+    <table class="table table-sm table-bordered mt-3" *ngIf="syncReport?.details?.length">
+      <thead class="table-light">
+        <tr>
+          <th>SKU</th>
+          <th>Status</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of syncReport.details">
+          <td>{{ d.sku }}</td>
+          <td>
+            <span class="badge" [ngClass]="{
+                'bg-success': d.status === 'Success',
+                'bg-danger': d.status === 'Failed',
+                'bg-warning text-dark': d.status === 'Skipped'
+              }">
+              {{ d.status }}
+            </span>
+          </td>
+          <td>{{ d.message || d.msg }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p *ngIf="!syncReport?.details?.length">No details available</p>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-secondary" (click)="modal.close()">Close</button>
+  </div>
+</ng-template><!-- Settings Modal Component -->
+
+<!-- Settings Modal Component -->
+<app-settings-modal (resetColumns)="resetColumnsOnly()" (resetSearch)="resetSearchOnly()"
+  (resetWidths)="resetWidthsOnly()" (resetAll)="resetSettings()"></app-settings-modal>

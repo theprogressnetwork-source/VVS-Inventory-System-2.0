@@ -1,0 +1,8 @@
+<div class="sidebar-outer">
+  @if (settings.theme.sidebarIsFixed) {
+  <a class="logo d-flex align-items-center" routerLink="/view" (click)="closeSubMenus()" style="cursor: pointer;">
+   Inventory Management
+  </a>
+  }
+  <app-vertical-menu [menuItems]="menuItems"></app-vertical-menu>
+</div>

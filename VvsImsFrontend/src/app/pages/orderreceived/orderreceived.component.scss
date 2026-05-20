@@ -1,0 +1,19 @@
+.table td,
+.table th {
+  padding: 0.4rem 0.75rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table-wrapper {
+  max-height: 800px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  z-index: 0;
+}

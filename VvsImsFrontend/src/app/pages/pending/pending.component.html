@@ -1,0 +1,40 @@
+<div *ngIf="isLoading; else content">
+    <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+
+
+    <div class="row g-2 align-items-center mb-2">
+        <!-- Manage Columns Dropdown -->
+        <div class="col-12 col-md-3">
+            <div class="multi-select w-100">
+                <div class="select-box" (click)="dropdownOpen = !dropdownOpen">
+                    <span class="placeholder">Manage Columns</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="options" *ngIf="dropdownOpen">
+                    <div class="option-item" *ngFor="let col of allColumns">
+                        <label class="option-label">
+                            <input type="checkbox" [checked]="col.visible" (change)="onColumnToggle(col.field, $event)">
+                            <span>{{ col.headerName }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Field -->
+        <div class="col-12 col-md-3">
+            <input type="text" class="form-control" placeholder="Search inventory..."
+                (input)="onQuickFilterChanged($event)" style="height: 42px;border-radius: 0px;" />
+        </div>
+    </div>
+
+
+
+    <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px;" [rowData]="listInventory"
+        [theme]="'legacy'" [gridOptions]="gridOptions" [columnDefs]="colDefs" [defaultColDef]="defaultColDef" (gridReady)="onGridReady($event)"
+        [pagination]="true" [paginationPageSize]="50">
+    </ag-grid-angular>
+
+</ng-template>

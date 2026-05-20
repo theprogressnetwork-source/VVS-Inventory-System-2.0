@@ -1,0 +1,156 @@
+<div *ngIf="isLoading; else content">
+  <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+
+  <div class="card shadow-sm p-3 mb-3">
+    <div class="card-header bg-transparent p-0 mb-3">
+      <h5 class="mb-2">SKU Channel Mapping</h5>
+    </div>
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label mb-0">Channel</label>
+        <select class="form-select form-control" [(ngModel)]="newMapping.ChannelName" (change)="onChannelChange()">
+          <option value="">--Select Channel--</option>
+          <option *ngFor="let c of channels" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+
+      <!-- Channel SKU Suggestion Field -->
+      <div class="col-md-3 position-relative">
+        <label class="form-label mb-0">Channel SKU</label>
+
+        <input type="text" class="form-control" placeholder="Type or select SKU" [(ngModel)]="newMapping.ChannelSKU"
+          (focus)="onInputFocus()" (blur)="onInputBlur()" (input)="filterChannelSkus()" (keydown.enter)="onEnter()"
+          (keydown.arrowDown)="moveSelection(1)" (keydown.arrowUp)="moveSelection(-1)" />
+
+        <!-- Suggestions Dropdown -->
+        <div *ngIf="showDropdown" class="position-absolute bg-white border mt-1 rounded w-100"
+          style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+
+          <ng-container *ngIf="filteredChannelSkus.length > 0; else noChannelSku">
+            <div *ngFor="let sku of filteredChannelSkus; let i = index" class="p-2 dropdown-item"
+              [class.active]="i === highlightedIndex" style="cursor: pointer;" (mousedown)="selectSku(sku)"
+              [innerHTML]="highlightMatch(getDisplaySku(sku))">
+            </div>
+          </ng-container>
+
+          <ng-template #noChannelSku>
+            <div class="p-2 text-muted text-center">No matching results found</div>
+          </ng-template>
+        </div>
+      </div>
+
+
+      <div class="col-md-3 position-relative">
+        <label class="form-label mb-0">System SKU</label>
+
+        <input type="text" class="form-control" placeholder="Type or select System SKU"
+          [(ngModel)]="newMapping.SystemSKU" (focus)="onSystemInputFocus()" (blur)="onSystemInputBlur()"
+          (input)="filterSystemSkus()" (keydown.enter)="onSystemEnter()" (keydown.arrowDown)="moveSystemSelection(1)"
+          (keydown.arrowUp)="moveSystemSelection(-1)" />
+
+        <!-- Suggestion Dropdown -->
+        <div *ngIf="showSystemDropdown" class="position-absolute bg-white border mt-1 rounded w-100"
+          style="max-height: 200px; overflow-y: auto; z-index: 1000;">
+
+          <ng-container *ngIf="filteredSystemSkus.length > 0; else noSystemSku">
+            <div *ngFor="let s of filteredSystemSkus; let i = index" class="p-2 dropdown-item"
+              [class.active]="i === systemHighlightedIndex" style="cursor: pointer;" (mousedown)="selectSystemSku(s)"
+              [innerHTML]="highlightSystemMatch(s.sku + ' - ' + combineProductInfo(s))">
+            </div>
+          </ng-container>
+
+          <ng-template #noSystemSku>
+            <div class="p-2 text-muted text-center">No matching results found</div>
+          </ng-template>
+        </div>
+
+      </div>
+
+      <div class="col-md-3 d-grid">
+        <button class="btn bttn shadow" (click)="addMapping()"> <i class="fa fa-plus"></i> Add Mapping</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row g-2 align-items-center mb-2 bg-transparent">
+    <!-- Manage Columns Dropdown -->
+    <div class="col-12 col-md-3">
+      <div class="multi-select w-100">
+        <div class="select-box" (click)="dropdownOpen = !dropdownOpen">
+          <span class="placeholder">Manage Columns</span>
+          <span class="arrow">▾</span>
+        </div>
+        <div class="options" *ngIf="dropdownOpen">
+          <div class="option-item" *ngFor="let col of allColumns">
+            <label class="option-label">
+              <input type="checkbox" [checked]="col.visible" (change)="onColumnToggle(col.field, $event)">
+              <span>{{ col.headerName }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Field -->
+    <div class="col-12 col-md-3">
+      <input type="text" class="form-control" placeholder="Search inventory..." (input)="onQuickFilterChanged($event)"
+        style="height: 42px;border-radius: 0px;" />
+    </div>
+    <div class="col-12 col-md-6 d-flex justify-content-md-end mt-2 mt-md-0">
+
+      <button class="btn btn-outline-success d-flex align-items-center px-3" style="border-radius: 0px; height: 40px;"
+        (click)="exportExcel()">
+        <i class="fa fa-file-excel-o me-2" style="font-size: 18px;"></i>
+        <span class="ml-2">Export Excel</span>
+      </button>
+
+    </div>
+  </div>
+
+  <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px;" [rowData]="listMappingSKU"
+    [theme]="'legacy'" [gridOptions]="gridOptions" [columnDefs]="colDefs" [defaultColDef]="defaultColDef"
+    (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)" [pagination]="true"
+    [paginationPageSize]="50">
+  </ag-grid-angular>
+</ng-template>
+
+
+
+
+
+<!-- Confirmation Modal -->
+<ng-template #deleteModal let-modal>
+  <div class="modal-body text-center py-4">
+
+    <!-- Big Icon -->
+    <div class="mb-3">
+      <i class="fa fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+    </div>
+
+    <!-- Title -->
+    <h4 class="fw-bold mb-2">Are you sure?</h4>
+
+    <!-- Description -->
+    <p class="text-muted fs-5 mb-4">
+      This action will permanently delete the record. <br />
+      You won't be able to undo this!
+    </p>
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-center gap-3">
+      <button type="button" class="btn btn-danger mr-3 px-4 py-2 d-flex align-items-center gap-2"
+        (click)="onDeleteConfirmed()">
+        <i class="fa fa-trash pr-2"></i> Delete
+      </button>
+      <button type="button" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2 border"
+        data-bs-dismiss="modal" (click)="modal.dismiss('Cross click')">
+        <i class="fa fa-times pr-2"></i> Cancel
+      </button>
+
+    </div>
+
+  </div>
+</ng-template>

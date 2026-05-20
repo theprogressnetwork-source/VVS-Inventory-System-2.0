@@ -1,0 +1,122 @@
+<div *ngIf="isLoading; else content">
+    <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+    <div class="row g-2 align-items-center mb-2 bg-transparent">
+        <!-- Manage Columns Dropdown -->
+        <div class="col-12 col-md-3">
+            <div class="multi-select w-100">
+                <div class="select-box" (click)="dropdownOpen = !dropdownOpen">
+                    <span class="placeholder">Manage Columns</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="options" *ngIf="dropdownOpen">
+                    <div class="option-item" *ngFor="let col of allColumns">
+                        <label class="option-label">
+                            <input type="checkbox" [checked]="col.visible" (change)="onColumnToggle(col.field, $event)">
+                            <span>{{ col.headerName }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Field -->
+        <div class="col-12 col-md-3">
+            <input type="text" class="form-control" placeholder="Search model..."
+                (input)="onQuickFilterChanged($event)" style="height: 42px;border-radius: 0px;" />
+        </div>
+
+        <div class="col-12 col-md-2 text-end">
+            <button class="btn bttn shadow" (click)="openAddModal()" title="Add Models">
+                <i class="fa fa-plus"></i> Add Models
+            </button>
+        </div>
+    </div>
+
+    <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px;" [rowData]="listModels"
+        [theme]="'legacy'" [gridOptions]="gridOptions" [columnDefs]="colDefs" [defaultColDef]="defaultColDef" (gridReady)="onGridReady($event)"
+        (cellClicked)="onCellClicked($event)" [pagination]="true" [paginationPageSize]="50">
+    </ag-grid-angular>
+</ng-template>
+
+
+
+<ng-template #modalTemplate let-modal>
+    <div class="modal-header p-3 bg-light">
+        <h5 class="mb-0">Models</h5>
+        <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+            style="outline: none">
+            <span aria-hidden="true" class="whitee">&times;</span>
+        </button>
+    </div>
+    <form [formGroup]="modelForm">
+        <div class="modal-body">
+
+            <!-- Model Name -->
+            <div class="mb-3">
+                <label for="value" class="form-label">Model Name</label> <span class="imp">*</span>
+                <input type="text" id="value" class="form-control" placeholder="Enter model name"
+                    formControlName="value" [ngClass]="{ 'is-invalid': f['value'].touched && f['value'].invalid }" />
+
+                <div class="invalid-feedback" *ngIf="f['value'].touched && f['value'].errors">
+                    <span *ngIf="f['value'].errors['required']">Model name is required.</span>
+                    <span *ngIf="f['value'].errors['minlength']">
+                        Must be at least 3 characters.
+                    </span>
+                </div>
+            </div>
+
+            <!-- Is Active -->
+            <!-- <div class="form-check mb-3">
+                <input type="checkbox" id="isActive" class="form-check-input" formControlName="isActive" />
+                <label for="isActive" class="form-check-label">Is Active</label>
+            </div> -->
+        </div>
+        <div class="modal-footer">
+            <button (click)="submitData()" *ngIf="!hideShowBtn" type="submit" class="btn btn-success" [disabled]="modelForm.invalid">
+                <i class="fa fa-save pr-2"></i> Submit
+            </button>
+            <button (click)="updateData()" *ngIf="hideShowBtn" type="submit" class="btn btn-success" [disabled]="modelForm.invalid">
+                <i class="fa fa-save pr-2"></i> Update
+            </button>
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal" (click)="modal.dismiss('Cross click')">
+                <i class="fa fa-times pr-2"></i> Cancel
+            </button>
+        </div>
+    </form>
+</ng-template>
+
+<!-- Confirmation Modal -->
+<ng-template #deleteModal let-modal>
+    <div class="modal-body text-center py-4">
+
+        <!-- Big Icon -->
+        <div class="mb-3">
+            <i class="fa fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+        </div>
+
+        <!-- Title -->
+        <h4 class="fw-bold mb-2">Are you sure?</h4>
+
+        <!-- Description -->
+        <p class="text-muted fs-5 mb-4">
+            This action will permanently delete the record. <br />
+            You won't be able to undo this!
+        </p>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-center gap-3">
+            <button type="button" class="btn btn-danger mr-3 px-4 py-2 d-flex align-items-center gap-2"
+                (click)="onDeleteConfirmed()">
+                <i class="fa fa-trash pr-2"></i> Delete
+            </button>
+            <button type="button" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2 border"
+                data-bs-dismiss="modal" (click)="modal.dismiss('Cross click')">
+                <i class="fa fa-times pr-2"></i> Cancel
+            </button>
+
+        </div>
+
+    </div>
+</ng-template>

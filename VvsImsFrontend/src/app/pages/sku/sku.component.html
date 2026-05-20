@@ -1,0 +1,204 @@
+<div *ngIf="isLoading; else content">
+    <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+    <div class="row g-2 align-items-center mb-2">
+        <!-- Manage Columns Dropdown -->
+        <div class="col-12 col-md-3">
+            <div class="multi-select w-100">
+                <div class="select-box" (click)="dropdownOpen = !dropdownOpen">
+                    <span class="placeholder">Manage Columns</span>
+                    <span class="arrow">▾</span>
+                </div>
+                <div class="options" *ngIf="dropdownOpen">
+                    <div class="option-item" *ngFor="let col of allColumns">
+                        <label class="option-label">
+                            <input type="checkbox" [checked]="col.visible" (change)="onColumnToggle(col.field, $event)">
+                            <span>{{ col.headerName }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Field -->
+        <div class="col-12 col-md-3">
+            <input type="text" class="form-control" placeholder="Search inventory..."
+                (input)="onQuickFilterChanged($event)" style="height: 42px;border-radius: 0px;" />
+        </div>
+        <!-- Import File Button -->
+        <div class="col-12 col-md-6 text-end">
+            <div class="d-flex flex-wrap justify-content-end gap-2">
+                <button class="btn bttn shadow mr-2" (click)="openAddModal()" title="Add SKU">
+                    <i class="fa fa-plus"></i> Add SKU
+                </button>
+                <button class="btn bttn shadow" (click)="openAddModalBulk()" title="Bulk Upload">
+                    <i class="fa fa-plus"></i> Bulk Upload
+                </button>
+            </div>
+        </div>
+
+
+    </div>
+
+
+    <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px;" [rowData]="listSkus" [theme]="'legacy'"
+        [columnDefs]="colDefs" [gridOptions]="gridOptions" [defaultColDef]="defaultColDef"
+        (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)" [pagination]="true"
+        [paginationPageSize]="50">
+    </ag-grid-angular>
+
+</ng-template>
+
+
+
+<ng-template #modalTemplate let-modal>
+    <div class="modal-header p-3 bg-light">
+        <h5 class="mb-0">Add SKU</h5>
+        <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+            style="outline: none">
+            <span aria-hidden="true" class="whitee">&times;</span>
+        </button>
+    </div>
+    <form [formGroup]="skuForm" (ngSubmit)="submitData()">
+        <div class="modal-body p-2">
+            <div class="card p-2">
+                <!-- SKU -->
+                <div class="col-md-12">
+                    <label for="sku" class="form-label mb-0">SKU</label>
+                    <input type="text" id="sku" class="form-control" placeholder="Enter SKU" formControlName="sku"
+                        [ngClass]="{ 'is-invalid': f['sku'].touched && f['sku'].invalid }" />
+                    <!-- counter -->
+                    <!-- <small class="text-muted">{{ f['sku'].value?.length || 0 }}/8</small> -->
+                    <!-- required error -->
+                    <div class="invalid-feedback" *ngIf="f['sku'].touched && f['sku'].errors?.['required']">
+                        SKU is required
+                    </div>
+                    <!-- minlength error -->
+                    <!-- <div class="invalid-feedback" *ngIf="f['sku'].touched && f['sku'].errors?.['minlength']">
+                        SKU must be exactly 8 characters
+                    </div> -->
+                </div>
+
+                <!-- Model -->
+                <div class="col-md-12 mt-2">
+                    <label for="model" class="form-label mb-0">Model</label>
+                    <select id="model" class="form-control" formControlName="model" (change)="getColors()"
+                        [ngClass]="{ 'is-invalid': f['model'].touched && f['model'].invalid }">
+                        <option value="">-- Select Model --</option>
+                        <option *ngFor="let m of models" [value]="m.value">{{ m.value }}</option>
+                    </select>
+                    <div class="invalid-feedback">Model is required</div>
+                </div>
+
+
+                <!-- Storage -->
+                <div class="col-md-12 mt-2">
+                    <label for="storage" class="form-label mb-0">Storage</label>
+                    <select id="storage" class="form-control" formControlName="storage"
+                        [ngClass]="{ 'is-invalid': f['storage'].touched && f['storage'].invalid }">
+                        <option *ngFor="let s of storages" [value]="s.value">{{ s.value }}</option>
+                    </select>
+                    <div class="invalid-feedback">Storage is required</div>
+                </div>
+
+                <!-- Color -->
+                <div class="col-md-12 mt-2">
+                    <label for="color" class="form-label mb-0">Color</label>
+                    <select id="color" class="form-control" formControlName="color"
+                        [ngClass]="{ 'is-invalid': f['color'].touched && f['color'].invalid }">
+                        <option value="">-- Select Color --</option>
+                        <option *ngFor="let c of colors" [value]="c.value">{{ c.value }}</option>
+                    </select>
+                    <div class="invalid-feedback">Color is required</div>
+                </div>
+
+
+                <!-- Grade -->
+                <div class="col-md-12 mt-2">
+                    <label for="grade" class="form-label mb-0">Grade</label>
+                    <select id="grade" class="form-control" formControlName="grade"
+                        [ngClass]="{ 'is-invalid': f['grade'].touched && f['grade'].invalid }">
+                        <option value="" disabled>-- Select Grade --</option>
+                        <option *ngFor="let g of grades" [ngValue]="g.id">{{g.value}}</option>
+
+                    </select>
+                    <div class="invalid-feedback">Grade is required</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" [disabled]="skuForm.invalid">
+                <i class="fa fa-save pr-2"></i> Submit
+            </button>
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal" (click)="modal.dismiss('Cross click')">
+                <i class="fa fa-times pr-2"></i> Cancel
+            </button>
+        </div>
+    </form>
+</ng-template>
+
+<ng-template #modalTemplateBulk let-modal>
+    <div class="modal-header p-3 bg-light">
+        <h5 class="mb-0">Upload SKU File</h5>
+        <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+            style="outline: none">
+            <span aria-hidden="true" class="whitee">&times;</span>
+        </button>
+
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label>Select Excel file</label>
+
+            <!-- Unified Drag & Drop + Click Zone -->
+            <label class="upload-zone w-100 text-center" (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)" (drop)="onFileDrop($event)">
+                <input type="file" hidden (change)="onFileChange($event)" accept=".xlsx,.xls" />
+
+                <div class="p-4">
+                    <ng-container *ngIf="selectedFile; else placeholder">
+                        <p class="mb-1">
+                            <i class="fa fa-file-excel text-success"></i>
+                            {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile()">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </p>
+                    </ng-container>
+
+                    <ng-template #placeholder>
+                        <p class="mb-1">Drag & drop Excel file here</p>
+                        <p class="text-muted small mb-0">or click to browse</p>
+                    </ng-template>
+                </div>
+            </label>
+
+            <!-- Sample File Download -->
+            <small class="form-text text-muted">
+                Need a template?
+                <a href="/samples/sku-sample.xlsx" download>Download Sample File</a>
+            </small>
+        </div>
+
+        <div class="modal-footer pb-0">
+            <button class="btn btn-primary" [disabled]="!selectedFile" (click)="onBulkSubmit()">
+                <!-- Spinner while loading -->
+                <span *ngIf="isSubmit" class="spinner-border spinner-border-sm me-2"></span>
+
+                <!-- Icon when NOT loading -->
+                <i *ngIf="!isSubmit" class="fa fa-save me-2"></i>
+
+                <!-- Text -->
+                {{ isSubmit ? 'Submitting...' : 'Submit' }}
+
+            </button>
+            <button type="button" class="btn btn-danger" aria-label="Close" (click)="modal.dismiss('Cross click')"
+                style="outline: none">
+                <i class="fa fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+</ng-template>

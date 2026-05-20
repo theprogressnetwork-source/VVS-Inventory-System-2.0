@@ -1,0 +1,37 @@
+# =========================================================================
+# VVS IMS SOVEREIGN STACK GITIGNORE
+# =========================================================================
+
+# Large Archives & Temp Extracted Files
+*.zip
+*.tar.gz
+*.rar
+extracted_files/
+
+# Visual Studio & C# / .NET Build Artifacts
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs
+
+# Angular / Web / Node.js
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.env
+.env*.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Project Workspace Files (Optional, but let's keep VVS.code-workspace tracked if needed)
+# VVS.code-workspace

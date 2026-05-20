@@ -1,0 +1,554 @@
+<div *ngIf="isLoading; else content">
+  <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+  <div class="row g-2 align-items-center mb-2 bg-transparent">
+    <!-- Search Field -->
+    <div class="col-12 col-md-6">
+      <input type="text" class="form-control" placeholder="Search inventory..." [(ngModel)]="searchText"
+        (ngModelChange)="onQuickFilterChanged($event)" style="height: 42px; width: 70%; border-radius: 0px" />
+    </div>
+
+    <!-- Right Side Actions (Columns + Import + Settings + Export) -->
+    <div class="col-12 col-md-6 d-flex justify-content-md-end mt-2 mt-md-0">
+
+      <!-- Columns Dropdown -->
+      <div class="btn-group mr-2" ngbDropdown>
+        <button class="btn btn-outline-info dropdown-toggle d-flex align-items-center px-3" ngbDropdownToggle
+          style="border-radius: 0px; height: 40px">
+          <i class="fa fa-columns me-2" style="font-size: 18px"></i>
+          <span class="ml-2">Columns</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right p-2" ngbDropdownMenu
+          style="min-width: 200px; max-height: 300px; overflow-y: auto;">
+          <div *ngFor="let col of allColumns" class="custom-control custom-checkbox mb-1">
+            <input type="checkbox" class="custom-control-input" [id]="'col-' + col.field" [checked]="col.visible"
+              (change)="onColumnToggle(col.field, $event)">
+            <label class="custom-control-label ps-2" [for]="'col-' + col.field" style="cursor: pointer;">{{
+              col.headerName }}</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Button -->
+      <button class="btn btn-outline-secondary d-flex align-items-center mr-2" (click)="openSettingsModal()"
+        title="Column andFilter Settings" style="height: 40px; border-radius: 0; padding: 0 16px">
+        <i class="fa fa-cog me-2 pr-2"></i>
+        Settings
+      </button>
+      <!-- Import File Button -->
+      <button class="btn bttn d-flex align-items-center mr-2" (click)="openBulkUploadModal()" title="Import File"
+        style="height: 40px; border-radius: 0; padding: 0 16px">
+        <i class="fa fa-plus me-2 pr-2"></i>
+        Import File
+      </button>
+      <!-- Export Button -->
+      <button class="btn btn-outline-success d-flex align-items-center px-3" style="border-radius: 0px; height: 40px"
+        (click)="exportExcel()">
+        <i class="fa fa-file-excel-o me-2" style="font-size: 18px"></i>
+        <span class="ml-2">Export Excel</span>
+      </button>
+    </div>
+  </div>
+
+  <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px" [rowData]="listProducts"
+    [theme]="'legacy'" [gridOptions]="gridOptions" [columnDefs]="colDefs" [defaultColDef]="defaultColDef"
+    (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)" [pagination]="true"
+    [paginationPageSize]="50">
+  </ag-grid-angular>
+</ng-template>
+
+<!-- Modal -->
+<ng-template #modalTemplate let-modal>
+  <div class="modal-header p-3 bg-light">
+    <h5 class="mb-0">Update Product</h5>
+    <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+      style="outline: none">
+      <span aria-hidden="true" class="whitee">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="container p-0">
+      <!-- PRODUCT FORMS -->
+      <div *ngFor="
+          let grp of products.controls;
+          let i = index;
+          trackBy: trackByIndex
+        " [formGroup]="grp" class="card shadow-sm p-4 mb-3">
+        <!-- ROW 1 -->
+        <div class="row g-3">
+          <!-- SKU -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">SKU Code</label>
+            <div class="d-flex gap-2">
+              <input type="text" class="form-control" formControlName="sku" readonly placeholder="Auto SKU" />
+
+              <button class="btn btn-outline-primary btn-sm" *ngIf="!grp.get('sku')?.value"
+                style="margin-left: 5px; width: 32px" (click)="openSkuModal(i, grp)" title="Add Sku">
+                +
+              </button>
+            </div>
+          </div>
+
+          <!-- Model -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Model</label>
+            <select class="form-control" formControlName="model" (change)="updateSkuByFields(i); getColors(i)">
+              <option value="" disabled>Select model</option>
+              <option *ngFor="let m of models" [value]="m.value">
+                {{ m.value }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Storage -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Storage</label>
+            <select class="form-control" formControlName="storage" (change)="updateSkuByFields(i)">
+              <option value="" disabled>Select storage</option>
+              <option *ngFor="let s of storages" [value]="s.value">
+                {{ s.value }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ROW 2 -->
+        <div class="row g-3 mt-2">
+          <!-- Color -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Color</label>
+            <select class="form-control" formControlName="color" (change)="updateSkuByFields(i)">
+              <option value="" disabled>Select color</option>
+              <option *ngFor="let c of colors[i]" [value]="c.value">
+                {{ c.value }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Grade -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Grade</label>
+            <select class="form-control" formControlName="grade" (change)="updateSkuByFields(i)">
+              <option value="" disabled>Select grade</option>
+              <option *ngFor="let g of grades" [ngValue]="g.id">
+                {{ g.value }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Cost -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Cost</label>
+            <input type="number" min="0" step="0.01" placeholder="0.00" class="form-control" formControlName="cost" />
+          </div>
+        </div>
+
+        <!-- ROW 3 -->
+        <div class="row g-3 mt-2">
+          <!-- Vendor -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Vendor</label>
+            <input type="text" class="form-control" placeholder="Vendor" formControlName="vendor" />
+          </div>
+
+          <!-- Invoice -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold mb-0">Invoice Number</label>
+            <input type="text" class="form-control" placeholder="Invoice Number" formControlName="invoiceNumber" />
+          </div>
+
+          <!-- Phone Check -->
+          <div class="col-md-4">
+            <div class="form-check mt-4">
+              <input type="checkbox" class="form-check-input" id="phoneCheck{{ i }}" formControlName="phoneCheck" />
+              <label class="form-check-label ms-1" for="phoneCheck{{ i }}">
+                Phone Check
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 4 -->
+        <div class="row g-3 mt-2">
+          <!-- IMEI -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold mb-0">IMEI</label>
+            <input type="text" class="form-control" placeholder="IMEI" formControlName="imei"
+              (keydown.enter)="onImeiEntered(i)" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer bg-light">
+    <button type="button" class="btn btn-primary" [disabled]="isUpdating" (click)="updateProduct()">
+      <!-- Spinner (loading) -->
+      <span *ngIf="isUpdating" class="spinner-border spinner-border-sm me-2" role="status">
+      </span>
+
+      <!-- Icon (when not loading) -->
+      <i *ngIf="!isUpdating" class="fa fa-save me-2"></i>
+
+      <!-- Label -->
+      {{ isUpdating ? "Updating..." : "Update" }}
+    </button>
+
+    <button type="button" class="btn btn-danger" aria-label="Close" (click)="modal.dismiss('Cross click')"
+      style="outline: none">
+      <i class="fa fa-times"></i> Cancel
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #orderModal let-modal>
+  <div class="modal-header p-3 bg-light">
+    <h5 class="mb-0">Order#</h5>
+    <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+      style="outline: none">
+      <span aria-hidden="true" class="whitee">&times;</span>
+    </button>
+  </div>
+  <form [formGroup]="orderForm">
+    <div class="modal-body">
+      <div class="mb-3">
+        <label for="Model" class="form-label fw-semibold mb-0"> Model </label>
+        <input type="text" id="Model" formControlName="productTitle" class="form-control" readonly />
+      </div>
+      <div class="mb-3">
+        <label for="IMEI" class="form-label fw-semibold mb-0"> IMEI </label>
+        <input type="text" id="IMEI" formControlName="imei" class="form-control" readonly />
+      </div>
+      <!-- Order Number -->
+      <div class="mb-3">
+        <label for="orderNumber" class="form-label fw-semibold mb-0">
+          <i class="fa fa-list-ol me-2 text-secondary"></i> Order Number
+        </label>
+        <input type="text" id="orderNumber" formControlName="orderNo" class="form-control"
+          placeholder="Enter Order Number" />
+        <div *ngIf="
+            orderForm.get('orderNo')?.invalid &&
+            orderForm.get('orderNo')?.touched
+          " class="text-danger small mt-1">
+          Order Number is required.
+        </div>
+      </div>
+      <!-- Date -->
+      <div class="mb-3">
+        <label for="date" class="form-label fw-semibold mb-0">
+          <i class="fa fa-calendar me-2 text-secondary"></i> Date
+        </label>
+        <input type="date" id="date" formControlName="date" class="form-control" />
+        <div *ngIf="
+            orderForm.get('date')?.invalid && orderForm.get('date')?.touched
+          " class="text-danger small mt-1">
+          Date is required.
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+    </div>
+
+    <div class="modal-footer bg-light">
+      <button type="button" class="btn btn-primary" [disabled]="isSubmitting" (click)="onSubmitOrder()">
+        <!-- Spinner (loading) -->
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status">
+        </span>
+
+        <!-- Icon (when not loading) -->
+        <i *ngIf="!isSubmitting" class="fa fa-save me-2"></i>
+
+        <!-- Label -->
+        {{ isSubmitting ? "Submitting..." : "Submit" }}
+      </button>
+      <button type="button" class="btn btn-danger" aria-label="Close" (click)="modal.dismiss('Cross click')"
+        style="outline: none">
+        <i class="fa fa-times"></i> Cancel
+      </button>
+    </div>
+  </form>
+</ng-template>
+
+<!-- Confirmation Modal -->
+<ng-template #deleteModal let-modal>
+  <div class="modal-body text-center py-4">
+    <!-- Big Icon -->
+    <div class="mb-3">
+      <i class="fa fa-exclamation-triangle text-warning" style="font-size: 4rem"></i>
+    </div>
+
+    <!-- Title -->
+    <h4 class="fw-bold mb-2">Are you sure?</h4>
+
+    <!-- Description -->
+    <p class="text-muted fs-5 mb-4">
+      This action will permanently delete the record. <br />
+      You won't be able to undo this!
+    </p>
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-center gap-3">
+      <button type="button" class="btn btn-danger mr-3 px-4 py-2 d-flex align-items-center gap-2"
+        (click)="onDeleteConfirmed()" [disabled]="isDeleting">
+        <span *ngIf="isDeleting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        <i *ngIf="!isDeleting" class="fa fa-trash pr-2"></i>
+        {{ isDeleting ? "Deleting..." : "Delete" }}
+      </button>
+      <button type="button" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2 border"
+        data-bs-dismiss="modal" (click)="modal.dismiss('Cross click')">
+        <i class="fa fa-times pr-2"></i> Cancel
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- SKU Add Modal -->
+<ng-template #modalTemplateSKU let-modal>
+  <div class="modal-header p-3 bg-light">
+    <h5 class="mb-0">SKU</h5>
+    <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+      style="outline: none">
+      <span aria-hidden="true" class="whitee">&times;</span>
+    </button>
+  </div>
+  <form [formGroup]="skuForm" (ngSubmit)="submitData()">
+    <div class="modal-body">
+      <div class="row card m-0">
+        <!-- SKU -->
+        <div class="col-md-6">
+          <label for="sku" class="form-label mb-0">SKU</label>
+          <input type="text" id="sku" class="form-control" placeholder="Enter SKU" formControlName="sku" [maxlength]="8"
+            [minlength]="8" [ngClass]="{ 'is-invalid': f['sku'].touched && f['sku'].invalid }" />
+          <!-- counter -->
+          <small class="text-muted">{{ f["sku"].value?.length || 0 }}/8</small>
+          <!-- required error -->
+          <div class="invalid-feedback" *ngIf="f['sku'].touched && f['sku'].errors?.['required']">
+            SKU is required
+          </div>
+          <!-- minlength error -->
+          <div class="invalid-feedback" *ngIf="f['sku'].touched && f['sku'].errors?.['minlength']">
+            SKU must be exactly 8 characters
+          </div>
+        </div>
+
+        <!-- Model -->
+        <div class="col-md-6">
+          <label for="model" class="form-label mb-0">Model</label>
+          <select id="model" class="form-control" formControlName="model" (change)="getColors2()" [ngClass]="{
+              'is-invalid': f['model'].touched && f['model'].invalid
+            }">
+            <option value="">-- Select Model --</option>
+            <option *ngFor="let m of models" [value]="m.value">
+              {{ m.value }}
+            </option>
+          </select>
+          <div class="invalid-feedback">Model is required</div>
+        </div>
+
+        <!-- Storage -->
+        <div class="col-md-6 mt-2">
+          <label for="storage" class="form-label mb-0">Storage</label>
+          <select id="storage" class="form-control" formControlName="storage" [ngClass]="{
+              'is-invalid': f['storage'].touched && f['storage'].invalid
+            }">
+            <option value="" disabled selected hidden>Select Storage</option>
+            <option *ngFor="let s of storages" [value]="s.value">
+              {{ s.value }}
+            </option>
+          </select>
+          <div class="invalid-feedback">Storage is required</div>
+        </div>
+
+        <!-- Color -->
+        <div class="col-md-6 mt-2">
+          <label for="color" class="form-label mb-0">Color</label>
+          <select id="color" class="form-control" formControlName="color" [ngClass]="{
+              'is-invalid': f['color'].touched && f['color'].invalid
+            }">
+            <option value="">-- Select Color --</option>
+            <option *ngFor="let c of colors" [value]="c.value">
+              {{ c.value }}
+            </option>
+          </select>
+          <div class="invalid-feedback">Color is required</div>
+        </div>
+
+        <!-- Grade -->
+        <div class="col-md-6 mt-2">
+          <label for="grade" class="form-label mb-0">Grade</label>
+          <select id="grade" class="form-control" formControlName="grade" [ngClass]="{
+              'is-invalid': f['grade'].touched && f['grade'].invalid
+            }">
+            <option value="" disabled>Select grade</option>
+            <option *ngFor="let g of grades" [ngValue]="g.id">
+              {{ g.value }}
+            </option>
+          </select>
+          <div class="invalid-feedback">Grade is required</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-primary" [disabled]="skuForm.invalid">
+        <i class="fa fa-save pr-2"></i> Submit
+      </button>
+      <button type="button" class="btn btn-danger" data-bs-dismiss="modal" (click)="modal.dismiss('Cross click')">
+        <i class="fa fa-times pr-2"></i> Cancel
+      </button>
+    </div>
+  </form>
+</ng-template>
+
+<ng-template #propagationModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title fw-bold">Propagation Summary</h5>
+    <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div *ngFor="let p of propagation" class="mb-4 p-3 border rounded bg-light">
+      <!-- Heading Row -->
+      <div class="d-flex align-items-center mb-3">
+        <span class="badge" [ngClass]="p.ok ? 'bg-success' : 'bg-danger'">
+          {{ p.ok ? "Successful" : "With Issues" }}
+        </span>
+
+        <h6 class="ms-3 fw-bold m-0">SKU: {{ p.result.systemSku || "N/A" }}</h6>
+      </div>
+
+      <!-- PROCESSED BLOCK -->
+      <div class="mb-3">
+        <h6 class="fw-semibold border-bottom pb-1">
+          Processed ({{ p.result.processedCount }})
+        </h6>
+
+        <div *ngIf="p.result.processed.length; else noProcessed">
+          <div *ngFor="let c of p.result.processed" class="p-2 border rounded mb-2 bg-white">
+            <div><strong>Channel:</strong> {{ c.channel }}</div>
+            <div><strong>Platform SKU:</strong> {{ c.platformSku }}</div>
+            <div><strong>Current Count:</strong> {{ c.quantitySent }}</div>
+            <div><strong>Delta:</strong> {{ c.delta }}</div>
+            <div class="text-muted small">{{ c.msg }}</div>
+          </div>
+        </div>
+        <ng-template #noProcessed>
+          <div class="text-muted small">No processed records.</div>
+        </ng-template>
+      </div>
+
+      <!-- SKIPPED BLOCK -->
+      <div class="mb-3">
+        <h6 class="fw-semibold border-bottom pb-1">
+          Skipped ({{ p.result.skippedCount }})
+        </h6>
+
+        <div *ngIf="p.result.skipped.length; else noSkipped">
+          <div *ngFor="let s of p.result.skipped" class="p-2 border rounded mb-2 bg-white">
+            {{ s }}
+          </div>
+        </div>
+        <ng-template #noSkipped>
+          <div class="text-muted small">No skipped records.</div>
+        </ng-template>
+      </div>
+
+      <!-- ERRORS BLOCK -->
+      <div>
+        <h6 class="fw-semibold border-bottom pb-1 text-danger">
+          Errors ({{ p.result.errorsCount }})
+        </h6>
+
+        <div *ngIf="p.result.errors.length; else noErrors">
+          <div *ngFor="let e of p.result.errors" class="p-2 border rounded mb-2 bg-white">
+            <div><strong>Channel:</strong> {{ e.channel }}</div>
+            <div><strong>Platform SKU:</strong> {{ e.platformSku }}</div>
+            <div><strong>Current Count:</strong> {{ e.currentCount }}</div>
+            <div><strong>Delta:</strong> {{ e.delta }}</div>
+            <div class="text-danger small">{{ e.msg }}</div>
+          </div>
+        </div>
+        <ng-template #noErrors>
+          <div class="text-muted small">No errors.</div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <!-- <button class="btn btn-sm btn-primary" (click)="copyPropagationJson()">
+            <i class="fa fa-copy me-1"></i> Copy JSON
+        </button> -->
+
+    <button class="btn btn-sm btn-danger" (click)="modal.dismiss()">
+      <i class="fa fa-times me-1"></i> Close
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #bulkUploadModal let-modal>
+  <div class="modal-header p-3 bg-light">
+    <h5 class="mb-0">Upload File</h5>
+    <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+      style="outline: none">
+      <span aria-hidden="true" class="whitee">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label>Select Excel file</label>
+
+      <!-- Unified Drag & Drop + Click Zone -->
+      <label class="upload-zone w-100 text-center" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+        (drop)="onFileDrop($event)">
+        <input type="file" hidden (change)="onFileChange($event)" accept=".xlsx,.xls" />
+
+        <div class="p-4">
+          <ng-container *ngIf="selectedFile; else placeholder">
+            <p class="mb-1">
+              <i class="fa fa-file-excel text-success"></i>
+              {{ selectedFile.name }} ({{
+              (selectedFile.size / 1024).toFixed(1)
+              }}
+              KB)
+              <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile()">
+                <i class="fa fa-times"></i>
+              </button>
+            </p>
+          </ng-container>
+
+          <ng-template #placeholder>
+            <p class="mb-1">Drag & drop Excel file here</p>
+            <p class="text-muted small mb-0">or click to browse</p>
+          </ng-template>
+        </div>
+      </label>
+
+      <!-- Sample File Download -->
+      <small class="form-text text-muted">
+        Need a template?
+        <a href="/samples/bulk-order.xlsx" download>Download Sample File</a>
+      </small>
+    </div>
+
+    <div class="modal-footer pb-0">
+      <button type="submit" (click)="onSubmitBulkOrder()" class="btn btn-primary"
+        [disabled]="!selectedFile || bulkUploadloading">
+        <span *ngIf="!bulkUploadloading"> <i class="fa fa-save"></i> Submit </span>
+
+        <span *ngIf="bulkUploadloading">
+          <i class="fa fa-spinner fa-spin"></i> Submitting...
+        </span>
+      </button>
+      <button type="button" class="btn btn-danger" aria-label="Close" (click)="modal.dismiss('Cross click')"
+        style="outline: none">
+        <i class="fa fa-times"></i> Cancel
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Settings Modal Component -->
+<app-settings-modal (resetColumns)="resetColumnsOnly()" (resetSearch)="resetSearchOnly()"
+  (resetWidths)="resetWidthsOnly()" (resetAll)="resetSettings()"></app-settings-modal>

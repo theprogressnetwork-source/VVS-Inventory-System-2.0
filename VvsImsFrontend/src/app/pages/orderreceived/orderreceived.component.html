@@ -1,0 +1,332 @@
+<div *ngIf="isLoading; else content">
+  <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+
+<ng-template #content>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4></h4>
+    <div class="d-flex">
+      <div class="btn-group mr-2" ngbDropdown>
+        <button
+          class="btn btn-outline-info dropdown-toggle d-flex align-items-center px-3"
+          ngbDropdownToggle
+          style="border-radius: 0px; height: 40px"
+        >
+          <i class="fa fa-columns me-2" style="font-size: 18px"></i>
+          <span class="ml-2">Columns</span>
+        </button>
+
+        <div
+          class="dropdown-menu dropdown-menu-right p-2"
+          ngbDropdownMenu
+          style="min-width: 200px; max-height: 300px; overflow-y: auto"
+        >
+          <div
+            *ngFor="let col of allColumns"
+            class="custom-control custom-checkbox mb-1"
+          >
+            <input
+              type="checkbox"
+              class="custom-control-input"
+              [id]="'orderreceived-col-' + col.index"
+              [checked]="col.visible"
+              (change)="toggleColumnVisibility(col.index)"
+            />
+            <label class="custom-control-label" [for]="'orderreceived-col-' + col.index">{{
+              col.headerName
+            }}</label>
+          </div>
+        </div>
+      </div>
+
+      <button
+        class="btn btn-outline-secondary d-flex align-items-center px-3 mr-2"
+        style="border-radius: 0px; height: 40px"
+        (click)="openSettingsModal()"
+      >
+        <i class="fa fa-cog me-2" style="font-size: 18px"></i>
+        <span class="ml-2"> Settings </span>
+      </button>
+
+      <button
+        class="btn btn-outline-success d-flex align-items-center px-3 mr-2"
+        style="border-radius: 0px; height: 40px"
+        (click)="exportExcel()"
+      >
+        <i class="fa fa-file-excel-o me-2" style="font-size: 18px"></i>
+        <span class="ml-2">Export Excel</span>
+      </button>
+
+      <button
+        class="btn btn-outline-warning d-flex align-items-center px-3 mr-2"
+        style="border-radius: 0px; height: 40px"
+        (click)="openExcelUploadModal()"
+      >
+        <i class="fa fa-upload me-2" style="font-size: 18px"></i>
+        <span class="ml-2"> Bulk Upload </span>
+      </button>
+
+      <button
+        class="btn btn-outline-primary d-flex align-items-center px-3 mr-2"
+        style="border-radius: 0px; height: 40px"
+        (click)="confirmModal()"
+      >
+        <i class="fa fa-check-square-o me-2" style="font-size: 18px"></i>
+        <span class="ml-2">Proceed</span>
+      </button>
+
+      <button
+        class="btn btn-outline-secondary d-flex align-items-center px-3"
+        style="border-radius: 0px; height: 40px"
+        (click)="loadData()"
+      >
+        <i class="fa fa-refresh me-2" style="font-size: 18px"></i>
+        <span class="ml-2">Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="table-container bg-white p-3 shadow-lg">
+    <div class="table-wrapper">
+      <table class="table table-bordered text-nowrap" id="orderReceivedTable">
+        <thead class="bg-light text-dark">
+          <tr>
+            <th>Channel</th>
+            <th>Order No#</th>
+            <th>Order Date</th>
+            <th>SKU</th>
+            <th>Line</th>
+            <th>IMEI Input</th>
+            <th>Model</th>
+            <th>Storage</th>
+            <th>Grade</th>
+            <th>Color</th>
+            <th>Cost</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of rowData">
+            <td>{{ row.channel }}</td>
+            <td>{{ row.orderNo }}</td>
+            <td>{{ row.orderDate ? (row.orderDate | date: 'MMM dd, yyyy') : '' }}</td>
+            <td>{{ row.sku }}</td>
+            <td>{{ row.lineNo }}</td>
+            <td class="text-center">
+              <div class="form-group position-relative imei-input-container mb-0">
+                <input
+                  type="text"
+                  class="form-control w-100 mb-0"
+                  [(ngModel)]="row.newImei"
+                  (focus)="showSuggestions(row)"
+                  (input)="filterImeis(row)"
+                  (keydown.enter)="onImeiEnter(row)"
+                  placeholder="Enter or scan IMEI"
+                  autocomplete="off"
+                  style="width: 220px !important"
+                />
+
+                <div
+                  *ngIf="row.showSuggestionList"
+                  class="position-absolute w-100 bg-white border rounded shadow-sm mt-1"
+                  style="max-height: 180px; overflow-y: auto; z-index: 1000"
+                >
+                  <div *ngIf="row.filteredImeis?.length; else noResults" class="list-group list-group-flush">
+                    <button
+                      type="button"
+                      class="list-group-item list-group-item-action py-2"
+                      *ngFor="let imei of row.filteredImeis"
+                      (click)="selectImei(imei, row)"
+                    >
+                      {{ imei }}
+                    </button>
+                  </div>
+                  <ng-template #noResults>
+                    <div class="p-2 text-muted text-center small">No matching IMEI found</div>
+                  </ng-template>
+                </div>
+              </div>
+            </td>
+            <td>{{ row.model || '-' }}</td>
+            <td>{{ row.storage || '-' }}</td>
+            <td>{{ row.gradeName || '-' }}</td>
+            <td>{{ row.color || '-' }}</td>
+            <td>{{ row.cost ?? '-' }}</td>
+            <td>{{ row.createdAt ? (row.createdAt | date: 'MMM dd, yyyy hh:mm a') : '' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #updateImeiModal let-modal>
+  <div class="modal-body text-center py-4">
+    <div class="mb-3">
+      <i class="fa fa-edit text-primary" style="font-size: 4rem"></i>
+    </div>
+
+    <h4 class="fw-bold mb-2">Confirm Processing</h4>
+    <p class="text-muted fs-5 mb-4">
+      Proceed all visible lines now?<br />
+      Filled IMEI lines sold hongi aur empty IMEI lines pending mark hongi.
+    </p>
+
+    <div class="d-flex justify-content-center gap-3">
+      <button
+        type="button"
+        class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2 mr-2"
+        (click)="submitUpdateAll()"
+        [disabled]="isSubmitting"
+      >
+        <span
+          *ngIf="isSubmitting"
+          class="spinner-border spinner-border-sm me-2"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <i *ngIf="!isSubmitting" class="fa fa-check pr-2"></i>
+        {{ isSubmitting ? 'Processing...' : 'Yes, Proceed' }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-danger px-4 py-2 d-flex align-items-center gap-2 border"
+        data-bs-dismiss="modal"
+        (click)="modal.dismiss('Cross click')"
+      >
+        <i class="fa fa-times pr-2"></i> Cancel
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #failedIMEIList let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Processing Report</h5>
+    <button type="button" class="close cross" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="mb-3 text-center">
+      <span class="badge bg-success text-white me-2 p-3">
+        Success: {{ imeiReport?.summary?.successCount || 0 }}
+      </span>
+      <span class="badge bg-danger text-white p-3">
+        Failed: {{ imeiReport?.summary?.failedCount || 0 }}
+      </span>
+    </div>
+
+    <div *ngIf="imeiReport?.summary?.failedCount > 0" class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Order No</th>
+            <th>SKU</th>
+            <th>IMEI</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of imeiReport?.summary?.failedList">
+            <td>{{ f.orderNo }}</td>
+            <td>{{ f.sku }}</td>
+            <td>{{ f.newImei || '-' }}</td>
+            <td>{{ f.reason || f.message }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="imeiReport?.summary?.failedCount === 0" class="text-center text-success">
+      All lines processed successfully.
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.close()">Close</button>
+  </div>
+</ng-template>
+
+<ng-template #excelUploadModal let-modal>
+  <div class="modal-header p-3 bg-light">
+    <h5 class="mb-0">Upload Excel File</h5>
+    <button
+      type="button"
+      class="close cross"
+      aria-label="Close"
+      (click)="modal.dismiss('Cross click')"
+      style="outline: none"
+    >
+      <span aria-hidden="true" class="whitee">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label>Select Excel file</label>
+
+      <label
+        class="upload-zone w-100 text-center"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onFileDrop($event)"
+      >
+        <input type="file" hidden (change)="onFileChange($event)" accept=".xlsx,.xls" />
+        <div class="p-4">
+          <ng-container *ngIf="selectedFile; else placeholder">
+            <p class="mb-1">
+              <i class="fa fa-file-excel text-success"></i>
+              {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+              <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile()">
+                <i class="fa fa-times"></i>
+              </button>
+            </p>
+          </ng-container>
+
+          <ng-template #placeholder>
+            <p class="mb-1">Drag and drop Excel file here</p>
+            <p class="text-muted small mb-0">or click to browse</p>
+          </ng-template>
+        </div>
+      </label>
+
+      <small class="form-text text-muted">
+        Columns required: <strong>OrderNo</strong>, <strong>Sku</strong>. Optional: <strong>Imei</strong>.
+      </small>
+    </div>
+
+    <div class="modal-footer pb-0">
+      <button
+        type="button"
+        class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2 mr-2"
+        (click)="submitUpdateExcel()"
+        [disabled]="isSubmittingExcel"
+      >
+        <span
+          *ngIf="isSubmittingExcel"
+          class="spinner-border spinner-border-sm me-2"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <i *ngIf="!isSubmittingExcel" class="fa fa-save pr-2"></i>
+        {{ isSubmittingExcel ? 'Submitting...' : 'Submit' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        aria-label="Close"
+        (click)="modal.dismiss('Cross click')"
+        style="outline: none"
+      >
+        <i class="fa fa-times"></i> Cancel
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<app-settings-modal
+  (resetColumns)="resetColumnsOnly()"
+  (resetSearch)="resetSearchOnly()"
+  (resetWidths)="resetWidthsOnly()"
+  (resetAll)="resetSettings()"
+></app-settings-modal>

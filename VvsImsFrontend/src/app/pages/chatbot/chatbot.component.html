@@ -1,0 +1,169 @@
+<div class="chatbot-page">
+  <div class="page-header">
+    <div>
+      <h4 class="page-title">Chatbot Console</h4>
+      <p class="page-subtitle">Manage conversations by status and respond in real time.</p>
+    </div>
+  </div>
+
+  <div class="status-tabs">
+    <button
+      class="status-tab"
+      *ngFor="let s of statuses"
+      [class.active]="activeStatus === s"
+      (click)="setActiveStatus(s)"
+    >
+      <span class="tab-label">{{ s }}</span>
+      <span class="tab-count">{{ getStatusCount(s) }}</span>
+    </button>
+  </div>
+
+  <div class="content-grid">
+    <div class="threads-card">
+      <div class="card-header">
+        <span class="card-title">Threads</span>
+        <span class="card-meta">{{ filteredThreads.length }} records</span>
+      </div>
+
+      <div class="search-box">
+        <i class="fa fa-search"></i>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Find a thread"
+          [(ngModel)]="searchText"
+        />
+      </div>
+
+      <div class="thread-list">
+        <button
+          class="thread-item"
+          *ngFor="let t of filteredThreads; trackBy: trackByThreadId"
+          [class.active]="selectedThread?.threadId === t.threadId"
+          [class.unread]="hasUnreadMessages(t)"
+          (click)="openChat(t)"
+        >
+          <div class="avatar">{{ t.customer.charAt(0) }}</div>
+          <div class="thread-info">
+            <div class="thread-top">
+              <div class="thread-name-wrap">
+                <span class="thread-name">{{ t.customer }}</span>
+                <span class="unread-dot" *ngIf="hasUnreadMessages(t)"></span>
+                <span class="unread-count" *ngIf="getUnreadCount(t) > 0">{{ getUnreadCount(t) }}</span>
+              </div>
+              <span class="thread-time">{{ t.lastMessageAt }}</span>
+            </div>
+            <div class="thread-mid">
+              <span class="thread-subject">{{ t.subject }}</span>
+              <div class="thread-badges">
+                <span
+                  class="attention-tag"
+                  [class.unread]="getThreadAttentionType(t) === 'unread'"
+                  [class.draft]="getThreadAttentionType(t) === 'draft'"
+                  *ngIf="getThreadAttentionType(t)"
+                >
+                  {{ getThreadAttentionLabel(t) }}
+                </span>
+                <span class="status-pill" [class]="t.status.toLowerCase().replace(' ', '-')">
+                  {{ t.status }}
+                </span>
+              </div>
+            </div>
+            <div class="thread-id">ID: {{ t.threadId }}</div>
+          </div>
+        </button>
+
+        <div *ngIf="filteredThreads.length === 0" class="empty-list">
+          No records found for {{ activeStatus }}
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-card" [class.empty]="!selectedThread">
+      <div class="card-header chat-header">
+        <div class="chat-head-left">
+          <span class="card-title">ChatBox</span>
+          <span class="chat-customer" *ngIf="selectedThread">{{ selectedThread.customer }}</span>
+        </div>
+        <div class="chat-head-actions" *ngIf="selectedThread && selectedThread.status !== 'RESOLVED'">
+          <button class="btn resolve-btn" (click)="markResolved(selectedThread)">
+            <i class="fa fa-check-circle"></i>
+            Mark Resolved
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-body" #chatBody>
+        <ng-container *ngIf="selectedThread; else emptyState">
+          <div
+            class="message"
+            *ngFor="let m of selectedThread.messages"
+            [class.ai]="isAiMessage(m)"
+            [class.user]="isUserMessage(m)"
+            [class.agent]="isAgentMessage(m)"
+            [class.system]="isSystemMessage(m)"
+          >
+            <div class="bubble">
+              <div class="meta" *ngIf="!isSystemMessage(m)">
+                <span class="name">{{ m.displayName }}</span>
+                <span class="time">{{ m.time }}</span>
+              </div>
+              <div class="text">{{ m.text }}</div>
+              <div class="time time-inline" *ngIf="isSystemMessage(m)">{{ m.time }}</div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <ng-template #emptyState>
+        <div class="empty-state">
+          <div class="empty-title">Select a thread</div>
+          <div class="empty-text">Click on ChatBox to open the conversation.</div>
+        </div>
+      </ng-template>
+
+      <div class="chat-footer" *ngIf="selectedThread">
+        <div class="ai-draft-box" *ngIf="latestAiDraft as aiDraft">
+          <div class="ai-draft-top">
+            <span class="ai-draft-label">AI Draft</span>
+            <div class="ai-draft-actions">
+              <button
+                class="btn draft-btn secondary"
+                type="button"
+                (click)="useAiDraftForEdit()"
+                [disabled]="isSendingMessage"
+              >
+                Review & Edit
+              </button>
+              <button
+                class="btn draft-btn primary"
+                type="button"
+                (click)="sendAiDraftAsIs()"
+                [disabled]="isSendingMessage"
+              >
+                Send As-Is
+              </button>
+            </div>
+          </div>
+          <div class="ai-draft-text">{{ aiDraft.text }}</div>
+        </div>
+
+        <div class="composer">
+          <i class="fa fa-pencil"></i>
+          <textarea
+            #composerInput
+            class="form-control"
+            rows="1"
+            placeholder="Write a response..."
+            [(ngModel)]="messageDraft"
+            (input)="onDraftInput()"
+            (keydown.control.enter)="sendMessage()"
+          ></textarea>
+          <button class="btn send-btn" (click)="sendMessage()" [disabled]="isSendingMessage">
+            <i class="fa fa-paper-plane mb-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

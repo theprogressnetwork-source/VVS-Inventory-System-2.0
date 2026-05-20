@@ -1,0 +1,91 @@
+<div *ngIf="isLoading; else content">
+    <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content>
+    <!-- Top Bar with Manage Columns (left) and Import File button (right) -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+
+        <!-- Manage Columns Dropdown -->
+        <div class="multi-select">
+            <div class="select-box" (click)="dropdownOpen = !dropdownOpen">
+                <span class="placeholder">Manage Columns</span>
+                <span class="arrow">▾</span>
+            </div>
+            <div class="options" *ngIf="dropdownOpen">
+                <div class="option-item" *ngFor="let col of allColumns">
+                    <label class="option-label">
+                        <input type="checkbox" [checked]="col.visible" (change)="onColumnToggle(col.field, $event)">
+                        <span>{{ col.headerName }}</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import File Button -->
+        <button class="btn bttn shadow" (click)="openAddModal()" title="Outgoing Products">
+            <i class="fa fa-plus"></i> Import File
+        </button>
+    </div>
+
+    <ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px;" [rowData]="listInventoryList"
+        [theme]="'legacy'" [columnDefs]="colDefs" [defaultColDef]="defaultColDef" (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"
+        [pagination]="true" [paginationPageSize]="5">
+    </ag-grid-angular>
+
+</ng-template>
+
+
+
+<ng-template #modalTemplate let-modal>
+    <div class="modal-header p-3 bg-light">
+        <h5 class="mb-0">Upload File</h5>
+        <button type="button" class="close cross" aria-label="Close" (click)="modal.dismiss('Cross click')"
+            style="outline: none">
+            <span aria-hidden="true" class="whitee">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="form-group">
+            <label>Select Excel file</label>
+
+            <!-- Unified Drag & Drop + Click Zone -->
+            <label class="upload-zone w-100 text-center" (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)" (drop)="onFileDrop($event)">
+                <input type="file" hidden (change)="onFileChange($event)" accept=".xlsx,.xls" />
+
+                <div class="p-4">
+                    <ng-container *ngIf="selectedFile; else placeholder">
+                        <p class="mb-1">
+                            <i class="fa fa-file-excel text-success"></i>
+                            {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="removeFile()">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </p>
+                    </ng-container>
+
+                    <ng-template #placeholder>
+                        <p class="mb-1">Drag & drop Excel file here</p>
+                        <p class="text-muted small mb-0">or click to browse</p>
+                    </ng-template>
+                </div>
+            </label>
+
+            <!-- Sample File Download -->
+            <small class="form-text text-muted">
+                Need a template?
+                <a href="assets/sample.xlsx" download>Download Sample File</a>
+            </small>
+        </div>
+
+        <div class="modal-footer pb-0">
+            <button type="submit" class="btn btn-primary" (click)="onSubmit()" [disabled]="!selectedFile">
+                <i class="fa fa-save"></i> Submit
+            </button>
+            <button type="button" class="btn btn-danger" aria-label="Close" (click)="modal.dismiss('Cross click')"
+                style="outline: none">
+                <i class="fa fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+</ng-template>

@@ -1,0 +1,94 @@
+<div class="container py-4">
+  <h2 class="text-center mb-4">Multi-Channel Inventory (Dummy Frontend)</h2>
+
+  <!-- Order Form -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Place Order (Simulate Channel Order)</h5>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Select Channel</label>
+          <select class="form-select form-control" [(ngModel)]="selectedChannel">
+            <option value="">-- Select Channel --</option>
+            <option *ngFor="let c of channels" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Select Channel SKU</label>
+          <select class="form-select form-control" [(ngModel)]="selectedSku">
+            <option value="">-- Select SKU --</option>
+            <option *ngFor="let sku of getChannelSkus()" [value]="sku">{{ sku }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Quantity</label>
+          <input type="number" min="1" class="form-control" [(ngModel)]="selectedQty" />
+        </div>
+
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-primary" (click)="placeOrder()">Place Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Table -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Current Inventory</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center">
+          <thead class="table-light">
+            <tr>
+              <th>Product ID</th>
+              <th>SKU</th>
+              <th>Product Name</th>
+              <th>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of inventory">
+              <td>{{ item.productId }}</td>
+              <td>{{ item.sku }}</td>
+              <td>{{ item.productName }}</td>
+              <td [class.text-danger]="item.quantity < 5">{{ item.quantity }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Log -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Orders Log</h5>
+      <div class="table-responsive">
+        <table class="table table-striped text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Order ID</th>
+              <th>Channel</th>
+              <th>Channel SKU</th>
+              <th>System SKU</th>
+              <th>Quantity</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of orders">
+              <td>{{ o.orderId }}</td>
+              <td>{{ o.channel }}</td>
+              <td>{{ o.channelSku }}</td>
+              <td>{{ o.systemSku }}</td>
+              <td>{{ o.qty }}</td>
+              <td>{{ o.timestamp | date:'short' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

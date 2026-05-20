@@ -1,0 +1,99 @@
+<!-- <div *ngIf="isLoading; else content">
+    <ngx-skeleton-loader count="3" appearance="line"></ngx-skeleton-loader>
+</div>
+<ng-template #content> -->
+
+<div class="container-fluid p-0 mb-3">
+    <div class="card shadow-sm border-0">
+
+        <div class="card-body">
+            <form (ngSubmit)="getReport()">
+
+                <div class="row align-items-end">
+                    <!-- Status -->
+                    <div class="col-lg-3 col-md-3">
+                        <label class="form-label fw-semibold mb-0">Status</label>
+                        <select class="form-select form-control" [(ngModel)]="filters.status" name="status">
+                            <option value="">-- All --</option>
+                            <option value="SOLD">SOLD</option>
+                            <option value="UNSOLD">UNSOLD</option>
+                            <option value="RETURNED">RETURNED</option>
+                            <option value="CANCELED">CANCELED</option>
+                        </select>
+                    </div>
+
+                    <!-- Channel -->
+                    <div class="col-lg-3 col-md-3">
+                        <label class="form-label fw-semibold mb-0">Channel</label>
+                        <select class="form-select form-control" [(ngModel)]="filters.channel" name="channel">
+                            <option value="">-- All --</option>
+                            <option *ngFor="let c of channels" [value]="c">{{ c }}</option>
+                        </select>
+                    </div>
+
+                    <!-- From Date -->
+                    <div class="col-lg-3 col-md-3">
+                        <label class="form-label fw-semibold mb-0">Date From</label>
+                        <input type="date" class="form-control" [(ngModel)]="filters.dateFrom" name="dateFrom" />
+                    </div>
+
+                    <!-- To Date -->
+                    <div class="col-lg-3 col-md-3">
+                        <label class="form-label fw-semibold mb-0">Date To</label>
+                        <input type="date" class="form-control" [(ngModel)]="filters.dateTo" name="dateTo" />
+                    </div>
+
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <button type="submit" class="btn btn-primary px-4 mr-2">
+                        <i class="fa fa-search me-1"></i> Search
+                    </button>
+                    <button type="button" class="btn btn-danger px-4" (click)="resetFilters()">
+                        <i class="fa fa-refresh me-1"></i> Reset
+                    </button>
+
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+<div class="row g-2 align-items-center mb-2">
+    <!-- Manage Columns Dropdown -->
+    <div class="col-12 col-md-3">
+        <div class="multi-select w-100">
+            <div class="select-box" (click)="dropdownOpen = !dropdownOpen">
+                <span class="placeholder">Manage Columns</span>
+                <span class="arrow">▾</span>
+            </div>
+            <div class="options" *ngIf="dropdownOpen">
+                <div class="option-item" *ngFor="let col of allColumns">
+                    <label class="option-label">
+                        <input type="checkbox" [checked]="col.visible" (change)="onColumnToggle(col.field, $event)">
+                        <span>{{ col.headerName }}</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Field -->
+    <div class="col-12 col-md-3">
+        <input type="text" class="form-control" placeholder="Search inventory..." (input)="onQuickFilterChanged($event)"
+            style="height: 42px;border-radius: 0px;" />
+    </div>
+</div>
+
+<ag-grid-angular class="ag-theme-alpine" style="width: 100%; height: 700px;" [rowData]="reportData" [theme]="'legacy'"
+    [gridOptions]="gridOptions" [columnDefs]="colDefs" [defaultColDef]="defaultColDef" (gridReady)="onGridReady($event)"
+    [pagination]="true" [paginationPageSize]="50">
+</ag-grid-angular>

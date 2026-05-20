@@ -1,0 +1,83 @@
+<div class="login-container">
+  <div class="login-wrapper">
+    <!-- Left Side - Info Section -->
+    <div class="info-section">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+
+      <div class="info-content">
+        <div class="illustration-container">
+          <img src="assets/images/inventory-sync.png" alt="Inventory Sync" class="main-illustration">
+        </div>
+        <h1>Seamless Multi-Channel <br>Inventory Sync</h1>
+        <p>
+          Empower your business with real-time synchronization across major platforms.
+          Manage stock effortlessly for <strong>Amazon</strong>, <strong>Shopify</strong>, and <strong>BestBuy</strong>
+          from one central hub.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Side - Form Section -->
+    <div class="form-section">
+      <div class="form-container">
+        <div class="form-header">
+          <h2>Welcome Back</h2>
+          <p>Please sign in to continue</p>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit(form.value)">
+          <!-- Email Input -->
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <div class="input-group">
+              <input [formControl]="userEmail" id="email" class="form-control-login" placeholder="Enter your email"
+                type="text">
+              <i class="fa fa-envelope input-icon"></i>
+            </div>
+            @if (form.get('userEmail')!.touched && form.get('userEmail')!.hasError('required')) {
+            <small class="text-danger mt-1">Email is required</small>
+            }
+            @if (form.get('userEmail')!.touched && form.get('userEmail')!.hasError('invalidEmail')) {
+            <small class="text-danger mt-1">Invalid email address</small>
+            }
+          </div>
+
+          <!-- Password Input -->
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-group">
+              <input [formControl]="password" id="password" class="form-control-login" placeholder="Enter your password"
+                type="password">
+              <i class="fa fa-lock input-icon"></i>
+            </div>
+            @if (form.get('password')!.touched && form.get('password')!.hasError('required')) {
+            <small class="text-danger mt-1">Password is required</small>
+            }
+            @if (form.get('password')!.touched && form.get('password')!.hasError('minlength')) {
+            <small class="text-danger mt-1">Password must be at least 6 characters</small>
+            }
+          </div>
+
+          <!-- Options -->
+          <div class="options-group">
+            <div class="custom-checkbox ml-4">
+              <input type="checkbox" class="custom-control-input" id="login-checkbox">
+              <label class="custom-control-label" for="login-checkbox">Remember me</label>
+            </div>
+            <!-- <a href="javascript:void(0)" class="forgot-password">Forgot Password?</a> -->
+          </div>
+
+          <!-- Submit Button -->
+          <button class="btn btn-primary-custom" type="submit" [disabled]="isSubmitting">
+            <span *ngIf="!isSubmitting">Sign In <i class="fa fa-arrow-right ms-2"></i></span>
+            <span *ngIf="isSubmitting">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Logging in...
+            </span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
