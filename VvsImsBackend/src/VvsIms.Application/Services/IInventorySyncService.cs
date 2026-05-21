@@ -35,5 +35,10 @@ namespace VvsIms.Application.Services
         /// Propagates stock updates to all channels.
         /// </summary>
         Task<(bool success, object result)> PropagateStockUpdateAsync(IEnumerable<string> systemSkus);
+
+        /// <summary>
+        /// Validates aggregate inventory against physical stock totals and raises notifications on drift.
+        /// </summary>
+        Task<(bool isValid, string report)> ValidateInventoryIntegrityAsync(string sku, CancellationToken ct = default);
     }
 }

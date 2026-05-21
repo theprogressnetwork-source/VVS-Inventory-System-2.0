@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace VvsIms.Domain.Interfaces;
@@ -9,6 +10,11 @@ namespace VvsIms.Domain.Interfaces;
 /// <typeparam name="T">The entity type.</typeparam>
 public interface IRepository<T> where T : class
 {
+    /// <summary>
+    /// Gets the raw IQueryable for custom LINQ projections and queries.
+    /// </summary>
+    IQueryable<T> Query { get; }
+
     /// <summary>
     /// Gets an entity by its primary key.
     /// </summary>

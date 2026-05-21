@@ -11,6 +11,9 @@ using VvsIms.Application.Interfaces;
 using VvsIms.Domain.Interfaces;
 using VvsIms.Infrastructure.Persistence;
 
+using VvsIms.Application.Services;
+using VvsIms.Domain.Entities;
+
 namespace VvsIms.Api.Controllers;
 
 /// <summary>
@@ -24,18 +27,18 @@ public class StockController : ControllerBase
 {
     private readonly IStockRepository _stockRepo;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly VvsImsDbContext _dbContext;
+    private readonly IInventorySyncService _inventorySyncService;
     private readonly ILogger<StockController> _logger;
 
     public StockController(
         IStockRepository stockRepo,
         IUnitOfWork unitOfWork,
-        VvsImsDbContext dbContext,
+        IInventorySyncService inventorySyncService,
         ILogger<StockController> logger)
     {
         _stockRepo = stockRepo;
         _unitOfWork = unitOfWork;
-        _dbContext = dbContext;
+        _inventorySyncService = inventorySyncService;
         _logger = logger;
     }
 
@@ -45,7 +48,7 @@ public class StockController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<List<StockDto>>>> GetAll(CancellationToken ct)
     {
-        var stocks = await _dbContext.Stocks
+        var stocks = await _stockRepo.Query
             .OrderByDescending(s => s.CreatedAtUtc)
             .ToListAsync(ct);
 
@@ -171,20 +174,106 @@ public class StockController : ControllerBase
     [HttpPut("imei")]
     public async Task<ActionResult<ApiResponse<object>>> UpdateImei([FromBody] StockUpdateRequest request, CancellationToken ct)
     {
-        var stock = await _stockRepo.GetByImeiAsync(request.Imei, ct);
-        if (stock is null) return NotFound(ApiResponse<object>.Fail("Stock item not found by IMEI"));
+        _logger.LogInformation($"Binding physical IMEI {request.Imei} to order {request.OrderNo}");
 
-        if (!string.IsNullOrWhiteSpace(request.NewImei))
-            stock.Imei = request.NewImei;
-        if (!string.IsNullOrWhiteSpace(request.OrderNo))
-            stock.OrderNo = request.OrderNo;
-        if (!string.IsNullOrWhiteSpace(request.OrderStatus))
-            stock.OrderStatus = request.OrderStatus;
+        using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            // Find the placeholder stock record representing this order's SKU requirement
+            var placeholderStock = await _stockRepo.Query
+                .FirstOrDefaultAsync(s => s.OrderNo == request.OrderNo && s.Imei.StartsWith("P-") && !s.IsShipped, ct);
 
-        _stockRepo.Update(stock);
-        await _unitOfWork.SaveChangesAsync(ct);
+            if (placeholderStock == null)
+            {
+                // If no placeholder exists (e.g. manual order entry or direct IMEI update/overwrite), find by IMEI
+                var stock = await _stockRepo.GetByImeiAsync(request.Imei, ct);
+                if (stock is null) return NotFound(ApiResponse<object>.Fail("Stock item not found by IMEI"));
 
-        return Ok(ApiResponse<object>.Ok(null, "IMEI updated"));
+                if (!string.IsNullOrWhiteSpace(request.NewImei))
+                    stock.Imei = request.NewImei;
+                if (!string.IsNullOrWhiteSpace(request.OrderNo))
+                    stock.OrderNo = request.OrderNo;
+                if (!string.IsNullOrWhiteSpace(request.OrderStatus))
+                    stock.OrderStatus = request.OrderStatus;
+
+                _stockRepo.Update(stock);
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                await ((dynamic)transaction).CommitAsync(ct);
+
+                await _inventorySyncService.ValidateInventoryIntegrityAsync(stock.BaseProperties.Sku, ct);
+                return Ok(ApiResponse<object>.Ok(null, "IMEI updated directly"));
+            }
+
+            var sku = placeholderStock.BaseProperties.Sku;
+
+            // Find the physical device with the scanned IMEI
+            var physicalStock = await _stockRepo.GetByImeiAsync(request.Imei, ct);
+            if (physicalStock == null)
+            {
+                return NotFound(ApiResponse<object>.Fail($"Physical stock item with IMEI '{request.Imei}' not found."));
+            }
+
+            if (physicalStock.BaseProperties.Sku != sku)
+            {
+                return BadRequest(ApiResponse<object>.Fail($"Scanned device SKU '{physicalStock.BaseProperties.Sku}' does not match order SKU '{sku}'."));
+            }
+
+            if (physicalStock.IsShipped || physicalStock.DateSold != null)
+            {
+                return BadRequest(ApiResponse<object>.Fail("Scanned physical device is already sold or shipped."));
+            }
+
+            // Assign physical stock record to order
+            physicalStock.OrderNo = request.OrderNo;
+            physicalStock.OrderStatus = "Pending"; // Assigned, ready to be marked shipped
+            _stockRepo.Update(physicalStock);
+
+            // Delete the placeholder reserved record
+            _stockRepo.Remove(placeholderStock);
+
+            // Update Outgoing log to show physical IMEI assigned
+            var outgoingRepo = _unitOfWork.Repository<Outgoing>();
+            var outgoing = await outgoingRepo.Query
+                .FirstOrDefaultAsync(o => o.OrderNo == request.OrderNo && (o.Imei == "" || o.Imei == null || o.Imei.StartsWith("P-")), ct);
+            if (outgoing != null)
+            {
+                outgoing.Imei = request.Imei;
+                outgoingRepo.Update(outgoing);
+            }
+
+            // Also keep InventoryItem linkage synced
+            var invItemRepo = _unitOfWork.Repository<InventoryItem>();
+            var invItem = await invItemRepo.Query
+                .FirstOrDefaultAsync(i => i.Imei == request.Imei, ct);
+            if (invItem != null)
+            {
+                invItem.Order = request.OrderNo;
+                invItemRepo.Update(invItem);
+            }
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            await ((dynamic)transaction).CommitAsync(ct);
+
+            // Re-verify integrity for the SKU
+            await _inventorySyncService.ValidateInventoryIntegrityAsync(sku, ct);
+
+            return Ok(ApiResponse<object>.Ok(null, "Physical IMEI successfully assigned to pending order."));
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                await ((dynamic)transaction).RollbackAsync(ct);
+            }
+            catch (Exception txEx)
+            {
+                _logger.LogError(txEx, "Failed to rollback transaction");
+            }
+            _logger.LogError(ex, $"Failed to bind physical IMEI {request.Imei} to order {request.OrderNo}");
+            return StatusCode(500, ApiResponse<object>.Fail(ex.Message));
+        }
     }
 
     /// <summary>
@@ -205,17 +294,70 @@ public class StockController : ControllerBase
         if (!body.TryGetValue("imei", out var imei))
             return BadRequest(ApiResponse<object>.Fail("IMEI is required"));
 
-        var stock = await _stockRepo.GetByImeiAsync(imei, ct);
-        if (stock is null) return NotFound(ApiResponse<object>.Fail("Stock item not found"));
+        _logger.LogInformation($"Marking IMEI {imei} as shipped");
 
-        stock.IsShipped = true;
-        stock.ShippedDate = DateTime.UtcNow;
-        stock.OrderStatus = "Shipped";
+        using var transaction = await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var stock = await _stockRepo.GetByImeiAsync(imei, ct);
+            if (stock is null) return NotFound(ApiResponse<object>.Fail("Stock item not found"));
 
-        _stockRepo.Update(stock);
-        await _unitOfWork.SaveChangesAsync(ct);
+            if (stock.IsShipped)
+            {
+                return Ok(ApiResponse<object>.Ok(null, "Stock already marked as shipped"));
+            }
 
-        return Ok(ApiResponse<object>.Ok(null, "Stock marked as shipped"));
+            stock.IsShipped = true;
+            stock.ShippedDate = DateTime.UtcNow;
+            stock.DateSold = DateTime.UtcNow;
+            stock.OrderStatus = "Shipped";
+            _stockRepo.Update(stock);
+
+            // Sync the corresponding Outgoing entry status
+            var outgoingRepo = _unitOfWork.Repository<Outgoing>();
+            var outgoing = await outgoingRepo.Query
+                .FirstOrDefaultAsync(o => o.Imei == imei || (o.OrderNo == stock.OrderNo && (o.Imei == "" || o.Imei == null)), ct);
+            if (outgoing != null)
+            {
+                outgoing.OrderStatus = "Shipped";
+                outgoing.Imei = imei;
+                outgoing.Date = DateTime.UtcNow;
+                outgoingRepo.Update(outgoing);
+            }
+
+            // Sync corresponding InventoryItem date ship
+            var invItemRepo = _unitOfWork.Repository<InventoryItem>();
+            var invItem = await invItemRepo.Query
+                .FirstOrDefaultAsync(i => i.Imei == imei, ct);
+            if (invItem != null)
+            {
+                invItem.DateShip = DateTime.UtcNow;
+                invItem.Order = stock.OrderNo;
+                invItemRepo.Update(invItem);
+            }
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            await ((dynamic)transaction).CommitAsync(ct);
+
+            // Re-verify integrity for this SKU
+            await _inventorySyncService.ValidateInventoryIntegrityAsync(stock.BaseProperties.Sku, ct);
+
+            return Ok(ApiResponse<object>.Ok(null, "Stock successfully marked as shipped"));
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                await ((dynamic)transaction).RollbackAsync(ct);
+            }
+            catch (Exception txEx)
+            {
+                _logger.LogError(txEx, "Failed to rollback transaction");
+            }
+            _logger.LogError(ex, $"Failed to mark IMEI {imei} as shipped");
+            return StatusCode(500, ApiResponse<object>.Fail(ex.Message));
+        }
     }
 
     /// <summary>
@@ -225,7 +367,7 @@ public class StockController : ControllerBase
     public async Task<ActionResult<ApiResponse<List<StockDto>>>> GetTodayOrders(CancellationToken ct)
     {
         var today = DateTime.UtcNow.Date;
-        var stocks = await _dbContext.Stocks
+        var stocks = await _stockRepo.Query
             .Where(s => s.DateAdded.HasValue && s.DateAdded.Value.Date == today)
             .OrderByDescending(s => s.DateAdded)
             .ToListAsync(ct);
@@ -267,7 +409,7 @@ public class StockController : ControllerBase
             Channel = body.TryGetValue("channel", out var channel) ? channel : null,
         };
 
-        _dbContext.StockReturns.Add(stockReturn);
+        await _unitOfWork.Repository<Domain.Entities.StockReturn>().AddAsync(stockReturn, ct);
         stock.Rma = true;
         _stockRepo.Update(stock);
         await _unitOfWork.SaveChangesAsync(ct);

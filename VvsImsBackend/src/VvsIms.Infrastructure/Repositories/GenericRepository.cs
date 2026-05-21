@@ -27,6 +27,9 @@ public class GenericRepository<T> : IRepository<T> where T : class
     }
 
     /// <inheritdoc />
+    public IQueryable<T> Query => _dbSet;
+
+    /// <inheritdoc />
     public async Task<T?> GetByIdAsync(object id, CancellationToken ct = default)
     {
         var cacheKey = $"{typeof(T).Name}_{id}";
