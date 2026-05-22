@@ -24,10 +24,10 @@ public class BaseProperties
     /// </summary>
     public string Color { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Grade identifier (numeric, e.g., 0 = Good, 1 = OpenBox, 2 = Excellent).
-    /// </summary>
-    public int Grade { get; set; }
+	/// <summary>
+	/// Grade identifier (numeric, e.g., 0 = BrandNew, 1 = Excellent, 2 = Good, 3 = Fair, 4 = OpenBox).
+	/// </summary>
+	public int Grade { get; set; }
 
     /// <summary>
     /// Generated SKU code derived from Model/Storage/Color/Grade combination.
@@ -47,11 +47,13 @@ public class BaseProperties
     /// <summary>
     /// Human-readable grade name derived from the Grade integer.
     /// </summary>
-    public string GradeName => Grade switch
-    {
-        0 => "Good",
-        1 => "OpenBox",
-        2 => "Excellent",
-        _ => "N/A"
-    };
+	public string GradeName => Grade switch
+	{
+		0 => "BrandNew",
+		1 => "Excellent",
+		2 => "Good",
+		3 => "Fair",
+		4 => "OpenBox",
+		_ => "N/A"
+	};
 }

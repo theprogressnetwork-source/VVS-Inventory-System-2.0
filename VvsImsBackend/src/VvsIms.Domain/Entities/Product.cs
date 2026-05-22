@@ -1,3 +1,4 @@
+using System.Linq;
 using VvsIms.Domain.ValueObjects;
 
 namespace VvsIms.Domain.Entities;
@@ -21,12 +22,12 @@ public class Product : BaseEntity
     /// <summary>
     /// Vendor/source of the product.
     /// </summary>
-    public string? Vendor { get; set; }
+	public string Vendor { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Invoice number from the purchase.
-    /// </summary>
-    public string? InvoiceNumber { get; set; }
+	/// <summary>
+	/// Invoice number from the purchase.
+	/// </summary>
+	public string InvoiceNumber { get; set; } = string.Empty;
 
     /// <summary>
     /// Whether the item passed PhoneCheck diagnostics.
@@ -37,29 +38,38 @@ public class Product : BaseEntity
     /// Whether the product has been processed into stock.
     /// Once processed, the product is converted to a Stock entity.
     /// </summary>
-    public bool IsProcessed { get; set; }
+	public bool IsProcessed { get; set; }
 
-    /// <summary>
-    /// Validates that the product has all required base properties and a positive cost.
-    /// </summary>
-    public bool IsValid() =>
-        BaseProperties.Sku != "string" &&
-        BaseProperties.Color != "string" &&
-        BaseProperties.Model != "string" &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Model) &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Sku) &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Storage) &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Color) &&
-        BaseProperties.Cost.Amount > 0;
+	/// <summary>
+	/// Validates whether a string is a valid 15-digit IMEI.
+	/// </summary>
+	public static bool IsValidImei(string imei) => !string.IsNullOrWhiteSpace(imei) && imei.Length == 15 && imei.All(char.IsDigit);
 
-    /// <summary>
-    /// Validates base properties without requiring a SKU.
-    /// </summary>
-    public bool IsValidNoSku() =>
-        BaseProperties.Color != "string" &&
-        BaseProperties.Model != "string" &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Model) &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Storage) &&
-        !string.IsNullOrWhiteSpace(BaseProperties.Color) &&
-        BaseProperties.Cost.Amount > 0;
+	/// <summary>
+	/// Validates that the product has all required base properties and a positive cost.
+	/// </summary>
+	public bool IsValid() =>
+		BaseProperties.Sku != "string" &&
+		BaseProperties.Color != "string" &&
+		BaseProperties.Model != "string" &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Model) &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Sku) &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Storage) &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Color) &&
+		!string.IsNullOrWhiteSpace(Vendor) &&
+		!string.IsNullOrWhiteSpace(InvoiceNumber) &&
+		BaseProperties.Cost.Amount > 0;
+
+	/// <summary>
+	/// Validates base properties without requiring a SKU.
+	/// </summary>
+	public bool IsValidNoSku() =>
+		BaseProperties.Color != "string" &&
+		BaseProperties.Model != "string" &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Model) &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Storage) &&
+		!string.IsNullOrWhiteSpace(BaseProperties.Color) &&
+		!string.IsNullOrWhiteSpace(Vendor) &&
+		!string.IsNullOrWhiteSpace(InvoiceNumber) &&
+		BaseProperties.Cost.Amount > 0;
 }

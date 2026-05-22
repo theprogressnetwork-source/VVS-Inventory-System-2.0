@@ -25,7 +25,12 @@ public class StockDto
     public string? OrderStatus { get; set; }
     public bool IsShipped { get; set; }
     public DateTime? ShippedDate { get; set; }
-    public DateTime? OrderLandingDate { get; set; }
+	public DateTime? OrderLandingDate { get; set; }
+	public string? Channel { get; set; }
+	public decimal? SalePrice { get; set; }
+	public DateTime? ReturnDate { get; set; }
+	public string? ReturnReason { get; set; }
+	public bool FbaFlag { get; set; }
 }
 
 /// <summary>

@@ -88,13 +88,18 @@ public class ProductController : ControllerBase
             stock.OrderStatus = dto.OrderStatus;
             stock.IsShipped = dto.IsShipped;
             stock.ShippedDate = dto.ShippedDate;
-            stock.OrderLandingDate = dto.OrderLandingDate;
+	stock.OrderLandingDate = dto.OrderLandingDate;
+		stock.Channel = dto.Channel;
+		stock.SalePrice = dto.SalePrice;
+		stock.ReturnDate = dto.ReturnDate;
+		stock.ReturnReason = dto.ReturnReason;
+		stock.FbaFlag = dto.FbaFlag;
 
-            _stockRepo.Update(stock);
-        }
+		_stockRepo.Update(stock);
+	}
 
-        await _unitOfWork.SaveChangesAsync(ct);
-        return Ok(ApiResponse<object>.Ok(null, $"{items.Count} stock items updated"));
+	await _unitOfWork.SaveChangesAsync(ct);
+	return Ok(ApiResponse<object>.Ok(null, $"{items.Count} stock items updated"));
     }
 
     /// <summary>
@@ -242,10 +247,15 @@ public class ProductController : ControllerBase
         OrderStatus = s.OrderStatus,
         IsShipped = s.IsShipped,
         ShippedDate = s.ShippedDate,
-        OrderLandingDate = s.OrderLandingDate,
-    };
+	OrderLandingDate = s.OrderLandingDate,
+		Channel = s.Channel,
+		SalePrice = s.SalePrice,
+		ReturnDate = s.ReturnDate,
+		ReturnReason = s.ReturnReason,
+		FbaFlag = s.FbaFlag,
+	};
 
-    private static ProductDto MapProductToDto(Product p) => new()
+	private static ProductDto MapProductToDto(Product p) => new()
     {
         Id = p.Id,
         Sku = p.BaseProperties.Sku,

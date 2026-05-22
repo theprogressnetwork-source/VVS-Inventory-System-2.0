@@ -69,15 +69,40 @@ public class Stock : BaseEntity
     /// </summary>
     public bool IsShipped { get; set; }
 
-    /// <summary>
-    /// Date the item was shipped.
-    /// </summary>
-    public DateTime? ShippedDate { get; set; }
+	/// <summary>
+	/// Date the item was shipped.
+	/// </summary>
+	public DateTime? ShippedDate { get; set; }
 
-    /// <summary>
-    /// Expected landing/delivery date for the order.
-    /// </summary>
-    public DateTime? OrderLandingDate { get; set; }
+	/// <summary>
+	/// Expected landing/delivery date for the order.
+	/// </summary>
+	public DateTime? OrderLandingDate { get; set; }
+
+	/// <summary>
+	/// Sales channel (e.g., "eBay", "Amazon", "Swappa").
+	/// </summary>
+	public string? Channel { get; set; }
+
+	/// <summary>
+	/// Sale price of the item.
+	/// </summary>
+	public decimal? SalePrice { get; set; }
+
+	/// <summary>
+	/// Date the item was returned.
+	/// </summary>
+	public DateTime? ReturnDate { get; set; }
+
+	/// <summary>
+	/// Reason for the return.
+	/// </summary>
+	public string? ReturnReason { get; set; }
+
+	/// <summary>
+	/// Whether the item is flagged as FBA (Fulfilled by Amazon).
+	/// </summary>
+	public bool FbaFlag { get; set; }
 
     /// <summary>
     /// Validates that the stock item has all required base properties and a positive cost.

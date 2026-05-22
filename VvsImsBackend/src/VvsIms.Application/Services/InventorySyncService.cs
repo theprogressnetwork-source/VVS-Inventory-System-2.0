@@ -114,11 +114,7 @@ namespace VvsIms.Application.Services
                         }
                     }
 
-                    // 4. Update aggregate immediately (immediate decrement)
-                    inventory.Quantity = Math.Max(0, inventory.Quantity - item.qty);
-                    inventoryRepo.Update(inventory);
-
-                    // 5. Create Outgoing log entry
+ // 4. Create Outgoing log entry
                     var outgoing = new Outgoing
                     {
                         OrderNo = eventId,
@@ -127,27 +123,9 @@ namespace VvsIms.Application.Services
                         Date = orderDate,
                         OrderStatus = "Pending"
                     };
-                    await outgoingRepo.AddAsync(outgoing);
+ await outgoingRepo.AddAsync(outgoing);
 
-                    // 6. Create reserved Stock entry to act as physical placeholder
-                    for (int i = 0; i < item.qty; i++)
-                    {
-                        var placeholderImei = $"P-{eventId}-{Guid.NewGuid().ToString("N")[..6]}";
-                        var stockPlaceholder = new Stock
-                        {
-                            BaseProperties = inventory.BaseProperties,
-                            Imei = placeholderImei,
-                            OrderNo = eventId,
-                            DateAdded = DateTime.UtcNow,
-                            OrderStatus = "Pending",
-                            IsShipped = false,
-                            IsManualImei = false,
-                            Vendor = channelName
-                        };
-                        await stockRepo.AddAsync(stockPlaceholder);
-                    }
-
-                    processedSkus.Add(systemSku);
+ processedSkus.Add(systemSku);
                 }
 
                 await _unitOfWork.SaveChangesAsync();
@@ -209,32 +187,18 @@ namespace VvsIms.Application.Services
                     return (false, $"Inventory record for SKU {systemSku} not found.");
                 }
 
-                if (action.Equals("Cancel", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Find pending placeholder stocks for this order SKU
-                    var pendingStocks = await stockRepo.Query
-                        .Where(s => s.BaseProperties.Sku == systemSku && s.OrderNo == orderNo && !s.IsShipped)
-                        .Take(quantity)
-                        .ToListAsync();
-
-                    foreach (var stock in pendingStocks)
-                    {
-                        stockRepo.Remove(stock);
-                    }
-
-                    // Increment aggregate inventory quantity
-                    inventory.Quantity += quantity;
-                    inventoryRepo.Update(inventory);
-
-                    // Remove or update Outgoing record
-                    var outgoings = await outgoingRepo.Query
-                        .Where(o => o.OrderNo == orderNo)
-                        .ToListAsync();
-                    foreach (var o in outgoings)
-                    {
-                        outgoingRepo.Remove(o);
-                    }
-                }
+ if (action.Equals("Cancel", StringComparison.OrdinalIgnoreCase))
+ {
+ // Only remove Outgoing records for the order
+ // No placeholder Stocks exist anymore, and no Quantity was decremented on order receipt
+ var outgoings = await outgoingRepo.Query
+ .Where(o => o.OrderNo == orderNo)
+ .ToListAsync();
+ foreach (var o in outgoings)
+ {
+ outgoingRepo.Remove(o);
+ }
+ }
                 else if (action.Equals("Return", StringComparison.OrdinalIgnoreCase))
                 {
                     // For returns: items were already shipped. We return them to unsold physical stock.
@@ -358,60 +322,61 @@ namespace VvsIms.Application.Services
             return (true, results);
         }
 
-        /// <summary>
-        /// Validates aggregate inventory against physical stock totals and raises notifications on drift.
-        /// </summary>
-        public async Task<(bool isValid, string report)> ValidateInventoryIntegrityAsync(string sku, CancellationToken ct = default)
-        {
-            var stockRepo = _unitOfWork.Repository<Stock>();
-            var inventoryRepo = _unitOfWork.Repository<Inventory>();
+ /// <summary>
+ /// Validates aggregate inventory against physical stock totals and raises notifications on drift.
+ /// Auto-corrects aggregate Quantity if it does not match physical count.
+ /// </summary>
+ public async Task<(bool isValid, string report)> ValidateInventoryIntegrityAsync(string sku, CancellationToken ct = default)
+ {
+ var stockRepo = _unitOfWork.Repository<Stock>();
+ var inventoryRepo = _unitOfWork.Repository<Inventory>();
 
-            // 1. Unsold physical stocks (DateSold == null, !IsShipped, !Rma, and not a pending order placeholder)
-            int unsoldPhysical = await stockRepo.Query.CountAsync(s => 
-                s.BaseProperties.Sku == sku && 
-                s.DateSold == null && 
-                !s.IsShipped && 
-                !s.Rma && 
-                !s.Imei.StartsWith("P-"), ct);
+ // 1. Count physical unsold stocks (not placeholder, not shipped, not RMA)
+ int physicalCount = await stockRepo.Query.CountAsync(s => 
+ s.BaseProperties.Sku == sku && 
+ s.DateSold == null && 
+ !s.IsShipped && 
+ !s.Rma && 
+ !s.Imei.StartsWith("P-"), ct);
 
-            // 2. Pending orders count (OrderStatus == "Pending", and either has a placeholder IMEI or !IsManualImei)
-            int pendingOrders = await stockRepo.Query.CountAsync(s => 
-                s.BaseProperties.Sku == sku && 
-                s.OrderNo != null && 
-                s.OrderNo != "" && 
-                !s.IsShipped && 
-                !s.IsManualImei, ct);
+ // 2. Get aggregate Inventory.Quantity
+ var inventory = await inventoryRepo.Query.FirstOrDefaultAsync(i => i.BaseProperties.Sku == sku, ct);
+ int aggregateQty = inventory?.Quantity ?? 0;
 
-            // 3. Aggregate inventory quantity
-            var inventory = await inventoryRepo.Query.FirstOrDefaultAsync(i => i.BaseProperties.Sku == sku, ct);
-            int aggregateQty = inventory?.Quantity ?? 0;
+ // 3. Compare and auto-correct if mismatch
+ bool isValid = physicalCount == aggregateQty;
 
-            // 4. Verification formula
-            int expectedAvailable = unsoldPhysical - pendingOrders;
-            bool isValid = expectedAvailable == aggregateQty;
+ string report = $"SKU {sku} Integrity: Physical Count = {physicalCount}, Aggregate Quantity = {aggregateQty}.";
 
-            string report = $"SKU {sku} Integrity: Unsold Physical = {unsoldPhysical}, Pending Orders = {pendingOrders}, Expected Available = {expectedAvailable}, Aggregate Quantity = {aggregateQty}.";
+ if (!isValid)
+ {
+ _logger.LogError($"INVENTORY DISCREPANCY DETECTED! {report}");
 
-            if (!isValid)
-            {
-                _logger.LogError($"INVENTORY DISCREPANCY DETECTED! {report}");
-                
-                var message = $"Discrepancy detected for SKU {sku}. Unsold Physical: {unsoldPhysical}, Pending Orders: {pendingOrders}, Net Expected: {expectedAvailable}, but Aggregate Quantity is {aggregateQty}. (Difference: {aggregateQty - expectedAvailable})";
-                await _notificationService.CreateAsync(
-                    title: "Inventory Discrepancy Alert",
-                    message: message,
-                    type: "Error",
-                    createdBy: "System Validation",
-                    relatedEntity: sku,
-                    ct: ct
-                );
-            }
-            else
-            {
-                _logger.LogInformation($"Inventory integrity verified: {report}");
-            }
+ var message = $"Discrepancy detected for SKU {sku}. Physical Count: {physicalCount}, but Aggregate Quantity is {aggregateQty}. (Difference: {aggregateQty - physicalCount})";
+ await _notificationService.CreateAsync(
+ title: "Inventory Discrepancy Alert",
+ message: message,
+ type: "Error",
+ createdBy: "System Validation",
+ relatedEntity: sku,
+ ct: ct
+ );
 
-            return (isValid, report);
-        }
+ // Auto-correct: set aggregate Quantity to match physical count
+ if (inventory != null)
+ {
+ inventory.Quantity = physicalCount;
+ inventoryRepo.Update(inventory);
+ await _unitOfWork.SaveChangesAsync(ct);
+ _logger.LogInformation($"Auto-corrected SKU {sku} aggregate Quantity to {physicalCount}");
+ }
+ }
+ else
+ {
+ _logger.LogInformation($"Inventory integrity verified: {report}");
+ }
+
+ return (isValid, report);
+ }
     }
 }
